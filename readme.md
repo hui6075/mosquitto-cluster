@@ -41,7 +41,7 @@ Fix header|ClientID|Clean Session<br><br>
 SESSION RESP<br>
 Fix header|ClientID|PacketID|NRsubs|sub1(topic|qos)|...|subN|NRpubs|pub1(topic|state|dir|dup|qos|mid|payload)|...|pubN|<br>
 ### Cluster session support
-For cluster session, SESSION REQ would be broadcast for each client CONNECT which has no previous context found in local broker, remote broker which has this client's context will kick-off this client and if clean session set to false, the remote broker would return this client's session include subscription, incomplete publishes with QoS>0 inside SESSION RESP. This feature could be disable in mosquitto.conf, in order to save inside traffic.<br>
+For cluster session, SESSION REQ would be broadcast for each client CONNECT which has no previous context found in local broker, remote broker which has this client's context will kick-off this client and if clean session set to false, the remote broker would return this client's session include subscription, incomplete publishes with QoS=0/1 inside SESSION RESP. This feature could be disable in mosquitto.conf, in order to endure instantaneous large number of concurrent connections at system startup phase.<br>
 ### Cluster retain message support
 For retain message, PRIVATE SUBSCRIBE would be broadcast for each client subscription that
 is fresh for local broker, and if there exists a retain message, remote broker would
@@ -79,3 +79,13 @@ Only broadcast local fresh subscription to other brokers.<br>
 Broadcast unsubscription until a topic is no longer subscribed by any local client.<br>
 Session messages broadcasting can be disable by configuration.<br>
 DO NOT forward PUB/SUBs under $SYS.
+
+## Benchmark
+Using [krylovsk/mqtt-benchmark](https://github.com/krylovsk/mqtt-benchmark) as the benchmark tool to give a simply testing for the cluster. The bandwidth stop increase with 3 or more brokers due to client machine's bottleneck.<br>
+![image](https://github.com/hui6075/mosquitto/blob/develop/img/cluster_throughput.jpg)
+####			Pic4. Mean bandwidth of Mosquitto cluster<br>
+n=10k means 10000 messages to send per client, c=100 means 100 clients to start.<br>
+MsgSize=1000bytes, QoS=2.<br>
+
+A more detailed test report is available under:
+https://github.com/hui6075/mosquitto/tree/develop/benchmark
