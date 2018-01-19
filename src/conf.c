@@ -2303,11 +2303,9 @@ static int config__check(struct mosquitto__config *config)
 		for(j=i+1; j<config->node_count; j++){
 			node2 = &config->nodes[j];
 			if(!node2) continue;
-			if(!strcmp(node1->local_clientid, node2->local_clientid)){
-				log__printf(NULL, MOSQ_LOG_ERR, "[CLUSTER] Error: node local_clientid "
-												"'%s' is not unique. Try changing or setting the "
-												"local_clientid value for one of the nodes.",
-												node1->local_clientid);
+			if(!strcmp(node1->local_clientid, node2->local_clientid) ||
+			   (node1->port == node2->port && !strcmp(node1->address, node2->address))){
+				log__printf(NULL, MOSQ_LOG_ERR, "[CLUSTER] Error: duplicate node local_clientid or address for node %s.", node1->local_clientid);
 				return MOSQ_ERR_INVAL;
 			}
 		}
