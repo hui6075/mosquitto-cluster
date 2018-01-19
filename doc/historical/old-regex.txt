@@ -1,0 +1,43 @@
+This is the description of the regex used previously for topic/subscription
+matching. It is reproduced here for posterity.
+
+When a message is ready to be published at the broker, we need to check all
+of the subscriptions to see which ones the message should be sent to. This
+would be easy without wildcards, but requires a bit more work with them.
+
+The regex used to do the matching is of the form below for a topic of a/b/c:
+
+^(?:(?:(a|\+)(?!$))(?:(?:/(?:(b|\+)(?!$)))(?:(?:/(?:c|\+))|/#)?|/#)?|#)$
+
+In general, we're matching (a or +) followed by (the next levels of
+hierarchy or #).
+More specifically, all the levels of hierarchy must match, unless the last
+level is #.
+
+^(?:							# Must start at beginning of string
+		(?:						# (Level 1 hierarchy)
+			(a|\+)(?!$) 		# Match a or +, but only if not EOL.
+		)						# AND 
+		(?:
+			(?:					# (Level 2 hierarchy)
+				/				# Match /
+				(?:				# AND
+					(b|\+)(?!$)	# Match b or +, but only if not EOL.
+				)
+			)					# AND
+			(?:
+				(?:				# (Level 3 hierarchy)
+					/			# Match /
+					(?:			# AND
+						c|\+	# Match c or +.
+					)
+				)
+				|				# OR (instead of level 3)
+				/#				# Match /# at level 3
+			)?					# Level 3 exist 1/0 times
+			|					# OR (instead of level 2)
+			/#					# Match /# at level 2
+		)?						# Level 2 exist 1/0 times
+		|						# OR (instead of level 1)
+		#						# Match # at level 1
+	)$							# Must end on EOL.

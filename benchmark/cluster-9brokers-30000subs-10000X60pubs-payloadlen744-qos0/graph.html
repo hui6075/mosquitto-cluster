@@ -1,0 +1,203 @@
+<html>
+  <head>
+    <title>Tsung - Graphs Report </title>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+	<link rel="Index" href="/"/>
+    <script type="text/javascript" src="style/dygraph-combined.js"></script>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="style/bootstrap.min.css" rel="stylesheet">
+    <link href="style/dashboard.css" rel="stylesheet">
+    <link href="style/docs.min.css" rel="stylesheet">
+
+  </head>
+<body>
+    <script src="style/jquery.min.js"></script>
+    <script src="style/bootstrap.min.js"></script>
+
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Tsung <!-- SUBTITLE --></a>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="/es/ts_web:status">Status</a></li>
+            <li><a href="report.html">Reports</a></li>
+            <li><a href="graph.html">Graphs</a></li>
+            <li><a href="/es/ts_web:logs">Logs</a></li>
+            <li><a href="/es/ts_web:stop">Stop</a></li>
+            <!-- <li><a href="tsung.xml">Config</a></li> -->
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  <div class="container-fluid">
+      <div class="row">
+        <div class="col-sm-3 col-md-2 sidebar">
+          <ul class="nav nav-sidebar">
+            <li><a href="report.html#stats">Main statistics</a></li>
+            <li><a href="report.html#transaction">Transactions</a></li>
+            <li><a href="report.html#network">Network Throughput</a></li>
+            <li><a href="report.html#count">Counters</a></li>
+            <li><a href="report.html#os_mon">Server monitoring</a></li>
+          </ul>
+          <ul class="nav nav-sidebar">
+            <li><a href="graph.html#response_time">Response times</a></li>
+            <li><a href="graph.html#throughput">Throughput graphs</a></li>
+            <li><a href="graph.html#users">Simultaneous Users</a></li>
+            <li><a href="graph.html#os_mon">Server monitoring</a></li>
+          </ul>
+       </div>
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+
+
+<div id="response_time">
+<h3>Response Time</h3>
+<table>
+<tr><th>Transactions and Pages</th><th>Requests and connection establishment</th></tr>
+<tr>
+ <td>
+ <a href="images/graphes-Transactions-mean.png">
+  <img class="graph" src="images/graphes-Transactions-mean_tn.png" alt="transaction response time"/>
+</a>
+<br/>
+<p class="collapse alert-info" id="detailrequest"> Response time in
+msec for pages and transactions (a page
+is a group of requests not separated by a thinktime).</p>
+<a class="btn btn-info" data-toggle="collapse" data-target="#detailrequest"> <i class="icon-ok icon-white"></i>Info &raquo;</a>
+ </td>
+ <td>
+  <a href="images/graphes-Perfs-mean.png">
+   <img class="graph" src="images/graphes-Perfs-mean_tn.png" alt="mean request response time"/>
+  </a>
+<br/>
+<dl class="collapse alert-info" id="detailconnection">
+<dt>connect</dt> <dd>Mean duration (in msec) of the connection
+establishment only.</dd><dt>request</dt> <dd>Mean duration of
+requests (in msec).</dd></dl>
+<a class="btn btn-info" data-toggle="collapse" data-target="#detailconnection"> <i class="icon-ok icon-white"></i>Info &raquo;</a>
+ </td>
+ </tr>
+</table>
+</div>
+
+<div id="throughput">
+<h3>Throughput</h3> 
+
+<table>
+<tr><th>Transactions</th><th>Requests</th>
+</tr>
+<tr>
+ <td>
+ <a href="images/graphes-Transactions-rate.png">
+  <img class="graph" src="images/graphes-Transactions-rate_tn.png" alt="transaction rate"/> 
+ </a>
+ </td>
+ <td>
+  <a href="images/graphes-Perfs-rate.png">
+   <img class="graph" src="images/graphes-Perfs-rate_tn.png" alt="req/sec"/>
+  </a>
+ </td>
+ </tr>
+ <tr>
+    <th>Noack/Bidi</th>
+</tr>
+<tr>
+ <td>
+  <a href="images/graphes-Async-rate.png">
+   <img class="graph" src="images/graphes-Async-rate_tn.png" alt="req/sec"/>
+  </a>
+ </td>
+ </tr>
+<tr><th>Network traffic</th><th>New Users</th></tr>
+<tr>
+ <td>
+ <a href="images/graphes-Size-rate.png">
+  <img class="graph" src="images/graphes-Size-rate_tn.png" alt="Kb/sec"/>
+ </a>
+ </td>
+ <td>
+  <a href="images/graphes-Users_Arrival-rate.png">
+   <img class="graph" src="images/graphes-Users_Arrival-rate_tn.png" alt="visit/sec"/>
+  </a>
+ </td>
+ </tr>
+</table>
+</div>
+
+<div id="users">
+<h3>Simultaneous Users</h3>
+<table>
+<tr><th>Simultaneous Users</th>
+</tr>
+<tr>
+ <td> <a href="images/graphes-Users-simultaneous.png">
+  <img class="graph" src="images/graphes-Users-simultaneous_tn.png"
+  alt="Users"/>
+ </a>
+<br/>
+<dl class="collapse alert-info" id="detailsimul"><dt>users</dt><dd> Number of simultaneous users (it's session has started, but not yet finished).</dd>
+<dt>connected</dt> <dd>number of users with an opened TCP/UDP connection (example: for HTTP, during a think time, the TCP connection can be closed by the server, and it won't be reopened until the thinktime has expired)</dd></dl>
+<a class="btn btn-info" data-toggle="collapse" data-target="#detailsimul"> <i class="icon-ok icon-white"></i>Info &raquo;</a>
+ </td>
+ </tr>
+</table>
+</div>
+
+<div id="os_mon">
+<h3>Server OS monitoring</h3> 
+<table>
+<tr><th>CPU%</th><th>Free Memory</th></tr>
+<tr>
+ <td>
+ <a href="images/graphes-cpu-mean.png">
+  <img class="graph" src="images/graphes-cpu-mean_tn.png" alt="cpu"/>
+ </a>
+ </td>
+ <td>
+  <a href="images/graphes-freemem-mean.png">
+   <img class="graph" src="images/graphes-freemem-mean_tn.png" alt="free memory"/>
+  </a>
+ </td>
+ </tr>
+
+<tr><th>CPU Load</th></tr>
+<tr>
+ <td>
+ <a href="images/graphes-load-mean.png">
+  <img class="graph" src="images/graphes-load-mean_tn.png" alt="load"/>
+ </a>
+ </td>
+ </tr>
+
+
+
+</table>
+</div>
+
+
+
+<footer class="bs-docs-footer" role="contentinfo">
+  <ul class="bs-docs-footer-links muted">
+    <li>Tsung version 1.7.0</li>
+    <li><address>
+        Contact:   <a href="mailto:tsung-users@process-one.net">tsung-users@process-one.net</a>
+        </address>
+     </li>
+   </ul>
+</footer>
+ </div>
+ </div>
+</div>
+</body>
+</html>
+

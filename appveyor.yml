@@ -1,0 +1,45 @@
+os: Visual Studio 2013
+
+environment:
+  CMAKE_ARGS: -DCMAKE_BUILD_TYPE=Release
+  NSIS_ROOT: C:\nsis
+  SSL_VER: 1_0_2k
+
+configuration:
+  - Release
+
+install:
+  - appveyor DownloadFile http://slproweb.com/download/Win32OpenSSL-%SSL_VER%.exe
+  - Win32OpenSSL-%SSL_VER%.exe /silent /verysilent /sp- /suppressmsgboxes
+  - appveyor DownloadFile ftp://sourceware.org/pub/pthreads-win32/pthreads-w32-2-9-1-release.zip
+  - 7z -y x pthreads-w32-2-9-1-release.zip -oC:\pthreads\
+  - cinst -y nsis
+
+build:
+
+build_script:
+  - md build
+  - cd build
+  - cmake -DCMAKE_BUILD_TYPE=Release ..
+  - cmake --build . --config Release
+  - cd ..
+
+after_build:
+  - cd installer
+  - '"%PROGRAMFILES(x86)%\NSIS\makensis" mosquitto.nsi'
+
+artifacts:
+  - name: Installer
+    path: 'installer/mosquitto-*-install-windows-x86.exe'
+  #- path: build\src\Release\mosquitto.exe
+  #- path: build\src\Release\mosquitto_passwd.exe
+  #- path: build\lib\Release\mosquitto.dll
+  #- path: build\lib\Release\mosquitto.lib
+  #- path: build\client\Release\mosquitto_pub.exe
+  #- path: build\client\Release\mosquitto_sub.exe
+  #- path: build\src\Release\mosquitto.exe
+
+cache:
+  - C:\OpenSSL-Win32
+  - C:\pthreads
+

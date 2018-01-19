@@ -1,0 +1,90 @@
+<?xml version="1.0"?><tsung loglevel="debug" version="1.0">
+	<clients>
+		<client host="client" maxusers="5000000" cpu="4">
+		<ip value="xx.xx.xx.xx"/>
+		<ip value="xx.xx.xx.xx"/>
+		<ip value="xx.xx.xx.xx"/>
+		<ip value="xx.xx.xx.xx"/>
+		<ip value="xx.xx.xx.xx"/>
+		</client>
+	</clients>
+
+	<servers>
+		<server host="xx.xx.xx.xx" port="11883" type="tcp"/>
+		<server host="xx.xx.xx.xx" port="11883" type="tcp"/>
+		<server host="xx.xx.xx.xx" port="11883" type="tcp"/>
+                <server host="xx.xx.xx.xx" port="11884" type="tcp"/>
+                <server host="xx.xx.xx.xx" port="11884" type="tcp"/>
+                <server host="xx.xx.xx.xx" port="11884" type="tcp"/>
+                <server host="xx.xx.xx.xx" port="11885" type="tcp"/>
+                <server host="xx.xx.xx.xx" port="11885" type="tcp"/>
+                <server host="xx.xx.xx.xx" port="11885" type="tcp"/>
+	</servers>
+
+	<monitoring>
+		<monitor host="broker01" type="erlang"/>
+		<monitor host="broker03" type="erlang"/>
+		<monitor host="broker05" type="erlang"/>
+	</monitoring>
+
+	<load>
+		<arrivalphase phase="1" duration="15" unit="second">
+			<session_setup name="mqtt_subscriber" probability="100"/>
+			<users maxnumber="30000" arrivalrate="3000" unit="second"/>
+		</arrivalphase>
+		<arrivalphase phase="2" duration="100" unit="second">
+			<session_setup name="mqtt_publisher" probability="100"/>
+			<users maxnumber="600000" arrivalrate="10000" unit="second"/>
+		</arrivalphase>
+	</load>
+
+	<options>
+		<option name="file_server" id="dbpubtopic" value="/root/.tsung/pubtopic.csv"/>
+		<option name="file_server" id="dbsubtopic" value="/root/.tsung/subtopic.csv"/>
+	</options>
+
+	<sessions>
+		<session name="mqtt_publisher" probability="0" type="ts_mqtt">
+			<setdynvars sourcetype="random_number" start="10001" end="40000">
+				<var name="pubtopic"/>
+			</setdynvars>
+			<request>
+				<mqtt type="connect" clean_start="true" keepalive="60" will_topic="will_topic" will_qos="0" will_msg="will_msg" will_retain="false"/>
+			</request>
+
+			<request subst="true">
+				<mqtt type="publish" topic="%%_pubtopic%%" qos="0" retained="false">abcdefghijklmnopqtstuvwxyzABCDEFGHIJKLMNOPQRSTUVWMYZ0123456789abcdefghijklmnopqtstuvwxyzABCDEFGHIJKLMNOPQRSTUVWMYZ0123456789abcdefghijklmnopqtstuvwxyzABCDEFGHIJKLMNOPQRSTUVWMYZ0123456789abcdefghijklmnopqtstuvwxyzABCDEFGHIJKLMNOPQRSTUVWMYZ0123456789abcdefghijklmnopqtstuvwxyzABCDEFGHIJKLMNOPQRSTUVWMYZ0123456789abcdefghijklmnopqtstuvwxyzABCDEFGHIJKLMNOPQRSTUVWMYZ0123456789abcdefghijklmnopqtstuvwxyzABCDEFGHIJKLMNOPQRSTUVWMYZ0123456789abcdefghijklmnopqtstuvwxyzABCDEFGHIJKLMNOPQRSTUVWMYZ0123456789abcdefghijklmnopqtstuvwxyzABCDEFGHIJKLMNOPQRSTUVWMYZ0123456789abcdefghijklmnopqtstuvwxyzABCDEFGHIJKLMNOPQRSTUVWMYZ0123456789abcdefghijklmnopqtstuvwxyzABCDEFGHIJKLMNOPQRSTUVWMYZ0123456789abcdefghijklmnopqtstuvwxyzABCDEFGHIJKLMNOPQRSTUVWMYZ0123456789</mqtt>
+			</request>
+
+			<request>
+				<mqtt type="disconnect"/>
+			</request>
+		</session>
+
+		<session name="mqtt_subscriber" probability="0" type="ts_mqtt">
+			<setdynvars sourcetype="random_number" start="10001" end="40000">
+				<var name="subtopic"/>
+			</setdynvars>
+			<request>
+				<mqtt type="connect" clean_start="true" keepalive="60"/>
+			</request>
+
+			<request subst="true">
+				<mqtt type="subscribe" topic="%%_subtopic%%" qos="0"/>
+			</request>
+
+			<request>
+				<mqtt type="waitForMessages" timeout="150"/>
+			</request>
+
+			<request subst="true">
+				<mqtt type="unsubscribe" topic="%%_subtopic%%"/>
+			</request>
+
+			<request>
+				<mqtt type="disconnect"/>
+			</request>
+		</session>
+
+	</sessions>
+</tsung>

@@ -1,0 +1,9 @@
+_mosquitto_log_printf
+_mosquitto_client_address
+_mosquitto_client_clean_session
+_mosquitto_client_id
+_mosquitto_client_keepalive
+_mosquitto_client_certificate
+_mosquitto_client_protocol
+_mosquitto_client_sub_count
+_mosquitto_client_username

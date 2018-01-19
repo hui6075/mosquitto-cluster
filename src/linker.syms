@@ -1,0 +1,11 @@
+{
+	mosquitto_log_printf;
+	mosquitto_client_address;
+	mosquitto_client_clean_session;
+	mosquitto_client_id;
+	mosquitto_client_keepalive;
+	mosquitto_client_certificate;
+	mosquitto_client_protocol;
+	mosquitto_client_sub_count;
+	mosquitto_client_username;
+};
