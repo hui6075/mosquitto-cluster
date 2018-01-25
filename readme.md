@@ -14,7 +14,7 @@ node_address 192.168.1.1:1883<br>
 node_name node2<br>
 node_address 192.168.1.2:1883<br>
 
-Then config the loadbalancer, take above adresses as real server address. It is strongly recommend to terminate TLS on the loadbalancer, and use raw TCP inside the cluster.<br>
+Then config the loadbalancer, take above adresses as real server address. It is strongly recommend to terminate TLS on the loadbalancer, and use plain TCP inside the cluster.<br>
 
 ## Installing
 
@@ -25,7 +25,7 @@ various platforms.
 
 ## Cluster Specification
 
-Broadcast clients' subscription and unsubscription to each other brokers inside the cluster.<br>
+Broadcast clients' connect/sub/unsub to each other brokers inside the cluster.<br>
 ### Traffic cycle avoid
 In order to avoid infinite PUB/SUB forwarding, the publishes from other brokers will only send to client, the subscription and unsubscription from other brokers will not be forward.<br>
 ### Duplicate subscription avoid
