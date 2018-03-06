@@ -61,18 +61,18 @@ Provide continuous service under single point of failure.<br>
 Take on the role of one logical MQTT broker for millions of MQTT clients.<br>
 
 ![image](https://github.com/hui6075/mosquitto/blob/develop/img/1.jpg)
-####			Pic1. Mosquitto Cluster Overview<br>
+<p align="center"><b>Pic1. Mosquitto Cluster Overview</b></p>
 While receive client subscriptin: Notification other brokers that the topic has been subscribed by me,<br>
 While receive client publish: route the message to the correct brokers which subscribed this topic.<br>
 
 ![image](https://github.com/hui6075/mosquitto/blob/develop/img/2.jpg)
-####			Pic2. Mosquitto Cluster Private Messages<br>
+<p align="center"><b>Pic2. Mosquitto Cluster Private Messages</b></p>
 There's only one logic channel between 2 brokers, in order to reuse this channel for multi clients, 
 some private messages has been introduced, include client id, subscription id, raw timestamp and etc., 
 which help the broker to make a correct route decision.<br>
 
 ![image](https://github.com/hui6075/mosquitto/blob/develop/img/3.jpg)
-####			Pic3. Mosquitto Cluster Internal Message Flow<br>
+<p align="center"><b>Pic3. Mosquitto Cluster Internal Message Flow</b></p>
 Forwarding rules:<br>
 Forward local client subscriptions to the broker which is a fresh guy for the cluster or just recovered from a fault.<br>
 DO NOT forward internal messages to any broker.<br>
@@ -84,14 +84,14 @@ DO NOT forward PUB/SUBs under $SYS.
 ## Benchmark
 Using [krylovsk/mqtt-benchmark](https://github.com/krylovsk/mqtt-benchmark) as the benchmark tool to give a simply testing for the cluster. The bandwidth stop increase with 3 or more brokers due to client machine's bottleneck.<br>
 ![image](https://github.com/hui6075/mosquitto/blob/develop/img/cluster_throughput.jpg)
-####			Pic4. Mean bandwidth of Mosquitto cluster<br>
-n=10k means 10000 messages to send per client, c=100 means 100 clients to start.<br>
+<p align="center"><b>Pic4. Mean bandwidth of Mosquitto cluster</b></p>
+n=10k means 10000 messages to send per client, c=100 means 100 clients to start.
 MsgSize=1000bytes, QoS=2.<br>
 
 A more detailed test report is available under:
 https://github.com/hui6075/mosquitto/tree/develop/benchmark
 
-## Cluster Specification
+## Study Material
 
 ![image](https://github.com/hui6075/mosquitto-cluster/blob/master/benchmark/mosquitto_code_analyze.jpg)
-####			Pic5. Mosquitto code analyze(benchmark/mosquitto_code_analyze.jpg, w/o cluster)
+<p align="center"><b>Pic5. Mosquitto code analyze(benchmark/mosquitto_code_analyze.jpg, w/o cluster)</b></p>
