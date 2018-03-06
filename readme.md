@@ -90,3 +90,6 @@ MsgSize=1000bytes, QoS=2.<br>
 
 A more detailed test report is available under:
 https://github.com/hui6075/mosquitto/tree/develop/benchmark
+
+![image](https://github.com/hui6075/mosquitto-cluster/blob/master/benchmark/mosquitto_code_analyze.jpg)
+####			Pic5. Mosquitto code analyze(benchmark/mosquitto_code_analyze.jpg, w/o cluster)
