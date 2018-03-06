@@ -70,3 +70,7 @@ n=10k表示每个客户端发送10000条消息, c=100表示总共启动100个客
 
 更详细的Tsung压测报告：
 https://github.com/hui6075/mosquitto-cluster/tree/master/benchmark
+
+## 其他
+![image](https://github.com/hui6075/mosquitto-cluster/blob/master/benchmark/mosquitto_code_analyze.jpg)
+##### <div align=center>Pic5. Mosquitto源码分析<br></div>
