@@ -19,10 +19,9 @@ Then config the loadbalancer, take above adresses as real server address. It is 
 
 ## Installing
 
-Inside config.mk, comment "WITH_BRIDGE:=yes", and uncomment "WITH_CLUSTER:=yes".<br>
-
-See <http://mosquitto.org/download/> for details on installing binaries for
-various platforms.
+git clone https://github.com/hui6075/mosquitto-cluster.git <br>
+Edit config.mk, comment "WITH_BRIDGE:=yes", and uncomment "WITH_CLUSTER:=yes".<br>
+make && make install
 
 ## Cluster Specification
 
