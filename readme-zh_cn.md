@@ -12,12 +12,14 @@ git clone https://github.com/hui6075/mosquitto-cluster.git <br>
 
 ## 部署
 
-在所有节点上安装Mosquitto，并把节点名、IP、端口号写进配置文件mosquitto.conf,例如：<br>
-node_name node1<br>
-node_address 192.168.1.1:1883<br>
-<br>
-node_name node2<br>
-node_address 192.168.1.2:1883<br>
+在所有节点上安装Mosquitto，并把节点名、IP、端口号写进配置文件mosquitto.conf，例如：<br>
+`````
+node_name node1
+node_address 192.168.1.1:1883
+
+node_name node2
+node_address 192.168.1.2:1883
+`````
 然后配置负载均衡器，把所有节点的地址：端口号作为后端服务地址。Mosquitto是单进程实现，建议单机多实例部署，并把TLS终结在负载均衡器。
 
 ## Mosquitto集群特性
