@@ -7,7 +7,7 @@ Mosquitto集群
 ## 编译安装
 
 \> git clone https://github.com/hui6075/mosquitto-cluster.git </br>
-\> vi config.mk </br>
+\> cd mosquitto-cluster && vi config.mk </br>
 ```
 #WITH_BRIDGE:=yes
 WITH_CLUSTER:=yes
