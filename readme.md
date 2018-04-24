@@ -20,14 +20,16 @@ node_address 192.168.1.2:1883
 Then config the loadbalancer, take above adresses as real server address. It is strongly recommend to terminate TLS on the loadbalancer, and use plain TCP inside the cluster.<br>
 
 ## Installing
-
-git clone https://github.com/hui6075/mosquitto-cluster.git <br>
-Edit config.mk, comment "WITH_BRIDGE:=yes", and uncomment "WITH_CLUSTER:=yes".<br>
-make && make install
+\> git clone https://github.com/hui6075/mosquitto-cluster.git </br>
+\> cd mosquitto-cluster && vi config.mk </br>
+```
+# WITH_BRIDGE:=yes
+WITH_CLUSTER:=yes
+```
+\> make && make install </br>
 
 ## Cluster Specification
 
-Broadcast clients' connect/sub/unsub to each other brokers inside the cluster.<br>
 ### Traffic cycle avoid
 In order to avoid infinite PUB/SUB forwarding, the publishes from other brokers will only send to client, the subscription and unsubscription from other brokers will not be forward.<br>
 ### Duplicate subscription avoid
