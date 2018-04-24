@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2010-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2010-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -125,6 +125,7 @@ class mosqpp_EXPORT mosquittopp {
 
 		// names in the functions commented to prevent unused parameter warning
 		virtual void on_connect(int /*rc*/) {return;}
+		virtual void on_connect_with_flags(int /*rc*/, int /*flags*/) {return;}
 		virtual void on_disconnect(int /*rc*/) {return;}
 		virtual void on_publish(int /*mid*/) {return;}
 		virtual void on_message(const struct mosquitto_message * /*message*/) {return;}

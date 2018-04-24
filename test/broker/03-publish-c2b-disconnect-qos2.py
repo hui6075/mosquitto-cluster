@@ -25,17 +25,18 @@ pubrel_packet = mosq_test.gen_pubrel(mid)
 pubrel_dup_packet = mosq_test.gen_pubrel(mid, dup=True)
 pubcomp_packet = mosq_test.gen_pubcomp(mid)
 
-broker = mosq_test.start_broker(filename=os.path.basename(__file__))
+port = mosq_test.get_port()
+broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
 
 try:
-    sock = mosq_test.do_client_connect(connect_packet, connack_packet)
+    sock = mosq_test.do_client_connect(connect_packet, connack_packet, port=port)
 
     sock.send(publish_packet)
     if mosq_test.expect_packet(sock, "pubrec", pubrec_packet):
         # We're now going to disconnect and pretend we didn't receive the pubrec.
         sock.close()
 
-        sock = mosq_test.do_client_connect(connect_packet, connack_packet)
+        sock = mosq_test.do_client_connect(connect_packet, connack_packet, port=port)
         sock.send(publish_dup_packet)
 
         if mosq_test.expect_packet(sock, "pubrec", pubrec_packet):
@@ -45,7 +46,7 @@ try:
                 # Again, pretend we didn't receive this pubcomp
                 sock.close()
 
-                sock = mosq_test.do_client_connect(connect_packet, connack_packet)
+                sock = mosq_test.do_client_connect(connect_packet, connack_packet, port=port)
                 sock.send(pubrel_dup_packet)
 
                 if mosq_test.expect_packet(sock, "pubcomp", pubcomp_packet):
@@ -55,8 +56,8 @@ try:
 finally:
     broker.terminate()
     broker.wait()
+    (stdo, stde) = broker.communicate()
     if rc:
-        (stdo, stde) = broker.communicate()
         print(stde)
 
 exit(rc)

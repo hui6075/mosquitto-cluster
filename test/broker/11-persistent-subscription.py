@@ -10,6 +10,16 @@ if cmd_subfolder not in sys.path:
 
 import mosq_test
 
+def write_config(filename, port):
+    with open(filename, 'w') as f:
+        f.write("port %d\n" % (port))
+        f.write("persistence true\n")
+        f.write("persistence_file mosquitto-%d.db\n" % (port))
+
+port = mosq_test.get_port()
+conf_file = os.path.basename(__file__).replace('.py', '.conf')
+write_config(conf_file, port)
+
 rc = 1
 mid = 530
 keepalive = 60
@@ -29,14 +39,14 @@ puback_packet = mosq_test.gen_puback(mid)
 mid = 1
 publish_packet2 = mosq_test.gen_publish("subpub/qos1", qos=1, mid=mid, payload="message")
 
-if os.path.exists('mosquitto-test.db'):
-    os.unlink('mosquitto-test.db')
+if os.path.exists('mosquitto-%d.db' % (port)):
+    os.unlink('mosquitto-%d.db' % (port))
 
-broker = mosq_test.start_broker(filename=os.path.basename(__file__))
+broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
 
 (stdo1, stde1) = ("", "")
 try:
-    sock = mosq_test.do_client_connect(connect_packet, connack_packet, timeout=20)
+    sock = mosq_test.do_client_connect(connect_packet, connack_packet, timeout=20, port=port)
     sock.send(subscribe_packet)
 
     if mosq_test.expect_packet(sock, "suback", suback_packet):
@@ -44,9 +54,9 @@ try:
         broker.wait()
         (stdo1, stde1) = broker.communicate()
         sock.close()
-        broker = mosq_test.start_broker(filename=os.path.basename(__file__))
+        broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port)
 
-        sock = mosq_test.do_client_connect(connect_packet, connack_packet2, timeout=20)
+        sock = mosq_test.do_client_connect(connect_packet, connack_packet2, timeout=20, port=port)
 
         sock.send(publish_packet)
 
@@ -57,13 +67,14 @@ try:
 
     sock.close()
 finally:
+    os.remove(conf_file)
     broker.terminate()
     broker.wait()
+    (stdo, stde) = broker.communicate()
     if rc:
-        (stdo, stde) = broker.communicate()
         print(stde1 + stde)
-    if os.path.exists('mosquitto-test.db'):
-        os.unlink('mosquitto-test.db')
+    if os.path.exists('mosquitto-%d.db' % (port)):
+        os.unlink('mosquitto-%d.db' % (port))
 
 
 exit(rc)

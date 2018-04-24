@@ -31,15 +31,17 @@ mid = 3266
 publish2_packet = mosq_test.gen_publish("qos1/outgoing", qos=1, mid=mid, payload="outgoing-message")
 puback2_packet = mosq_test.gen_puback(mid)
 
-broker = mosq_test.start_broker(filename=os.path.basename(__file__))
+port = mosq_test.get_port()
+broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
 
 try:
-    sock = mosq_test.do_client_connect(connect_packet, connack1_packet)
+    sock = mosq_test.do_client_connect(connect_packet, connack1_packet, port=port)
     sock.send(subscribe_packet)
 
     if mosq_test.expect_packet(sock, "suback", suback_packet):
-        pub = subprocess.Popen(['./03-publish-b2c-disconnect-qos2-helper.py'])
+        pub = subprocess.Popen(['./03-publish-b2c-disconnect-qos2-helper.py', str(port)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         hrc = pub.wait()
+        (stdo, stde) = pub.communicate()
         if hrc:
             exit(hrc)
         # Should have now received a publish command
@@ -50,14 +52,14 @@ try:
             sock.send(publish2_packet)
             sock.close()
 
-            sock = mosq_test.do_client_connect(connect_packet, connack2_packet)
+            sock = mosq_test.do_client_connect(connect_packet, connack2_packet, port=port)
             if mosq_test.expect_packet(sock, "dup publish", publish_dup_packet):
                 sock.send(pubrec_packet)
 
                 if mosq_test.expect_packet(sock, "pubrel", pubrel_packet):
                     sock.close()
 
-                    sock = mosq_test.do_client_connect(connect_packet, connack2_packet)
+                    sock = mosq_test.do_client_connect(connect_packet, connack2_packet, port=port)
                     if mosq_test.expect_packet(sock, "dup pubrel", pubrel_packet):
                         sock.send(pubcomp_packet)
                         rc = 0
@@ -66,8 +68,8 @@ try:
 finally:
     broker.terminate()
     broker.wait()
+    (stdo, stde) = broker.communicate()
     if rc:
-        (stdo, stde) = broker.communicate()
         print(stde)
 
 exit(rc)

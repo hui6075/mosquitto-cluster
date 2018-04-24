@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,9 @@ Contributors:
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
 #ifndef WIN32
 #include <netdb.h>
@@ -244,7 +247,7 @@ int node__check_connect(struct mosquitto_db *db, struct mosquitto *context, time
 			}else if(rc == MOSQ_ERR_ERRNO){
 				log__printf(NULL, MOSQ_LOG_ERR, "Error connect with node: %s.", strerror(errno));
 			}else if(rc == MOSQ_ERR_EAI){
-				log__printf(NULL, MOSQ_LOG_ERR, "Error connect with node: %s.", gai_strerror(errno));
+				log__printf(NULL, MOSQ_LOG_ERR, "Error connect with node: %s.", strerror(errno));
 			}
 			node->attemp_reconnect = now + MOSQ_ERR_INTERVAL;
 			return rc;
@@ -338,6 +341,7 @@ int mosquitto_handle_retain(struct mosquitto_db *db, time_t now)
 			db__message_insert_to_inflight(db, tmp_cr->client, tmp_cr->retain_msgs);
 			tmp_cr->retain_msgs = tmp_cr->retain_msgs->next;
 		}
+		log__printf(NULL, MOSQ_LOG_DEBUG, "[CLUSTER] deleting cr..sub_id:%d, expect_send_time:%ld, now:%ld", tmp_cr->sub_id, tmp_cr->expect_send_time, mosquitto_time());
 		mosquitto__free(tmp_cr);
 	}
 	return MOSQ_ERR_SUCCESS;
@@ -455,7 +459,7 @@ int mosquitto_cluster_subscribe(struct mosquitto_db *db, struct mosquitto *conte
 		context->client_subs[context->client_sub_count++] = tmp_client_sub;
 	}
 
-	if(!context->is_db_dup_sub){
+	if(db->cluster_retain_delay>0 && !context->is_db_dup_sub){
 		cr = mosquitto__calloc(1, sizeof(struct mosquitto_client_retain));
 		cr->client = context;
 		cr->next = NULL;
@@ -463,6 +467,7 @@ int mosquitto_cluster_subscribe(struct mosquitto_db *db, struct mosquitto *conte
 		cr->retain_msgs = NULL;
 		cr->expect_send_time = mosquitto_time() + db->cluster_retain_delay;
 		cr->sub_id = ++db->sub_id;
+		log__printf(NULL, MOSQ_LOG_DEBUG, "[CLUSTER] adding cr..sub_id:%d, expect_send_time:%ld, now:%ld", cr->sub_id, cr->expect_send_time, mosquitto_time());
 		context->last_sub_id = cr->sub_id;
 		if(!db->retain_list){ /* add a client retain msg list into db */
 			db->retain_list = cr;

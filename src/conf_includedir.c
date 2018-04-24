@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -28,6 +28,7 @@ Contributors:
 #endif
 
 #ifndef WIN32
+#  include <strings.h>
 #  include <netdb.h>
 #  include <sys/socket.h>
 #else
@@ -54,6 +55,8 @@ int strcasecmp_p(const void *p1, const void *p2)
 #ifdef WIN32
 int config__get_dir_files(const char *include_dir, char ***files, int *file_count)
 {
+	int len;
+	int i;
 	char **l_files = NULL;
 	int l_file_count = 0;
 	char **files_tmp;
@@ -79,7 +82,7 @@ int config__get_dir_files(const char *include_dir, char ***files, int *file_coun
 				mosquitto__free(l_files[i]);
 			}
 			mosquitto__free(l_files);
-			closedir(dh);
+			FindClose(fh);
 			return MOSQ_ERR_NOMEM;
 		}
 		l_files = files_tmp;
@@ -90,7 +93,7 @@ int config__get_dir_files(const char *include_dir, char ***files, int *file_coun
 				mosquitto__free(l_files[i]);
 			}
 			mosquitto__free(l_files);
-			closedir(dh);
+			FindClose(fh);
 			return MOSQ_ERR_NOMEM;
 		}
 		snprintf(l_files[l_file_count-1], len, "%s/%s", include_dir, find_data.cFileName);

@@ -41,6 +41,9 @@ int main(int argc, char *argv[])
 {
 	int rc;
 	struct mosquitto *mosq;
+	int port;
+
+	port = atoi(argv[1]);
 
 	mosquitto_lib_init();
 
@@ -51,7 +54,7 @@ int main(int argc, char *argv[])
 	mosquitto_publish_callback_set(mosq, on_publish);
 	mosquitto_log_callback_set(mosq, on_log);
 
-	rc = mosquitto_connect(mosq, "localhost", 1890, 60);
+	rc = mosquitto_connect(mosq, "localhost", port, 60);
 	if(rc) return rc;
 
 	while(run == -1){

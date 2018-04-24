@@ -20,12 +20,14 @@ int main(int argc, char *argv[])
 {
 	struct mosquittopp_test *mosq;
 
+	int port = atoi(argv[1]);
+
 	mosqpp::lib_init();
 
 	mosq = new mosquittopp_test("01-will-set");
 	mosq->will_set("topic/on/unexpected/disconnect", strlen("will message"), "will message", 1, true);
 
-	mosq->connect("localhost", 1888, 60);
+	mosq->connect("localhost", port, 60);
 
 	while(run == -1){
 		mosq->loop();

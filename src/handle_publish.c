@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -42,6 +42,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 	int res = 0;
 	struct mosquitto_msg_store *stored = NULL;
 	int len;
+	int slen;
 	char *topic_mount;
 #ifdef WITH_BRIDGE
 	char *topic_temp;
@@ -61,15 +62,21 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 	}
 	retain = (header & 0x01);
 
-	if(packet__read_string(&context->in_packet, &topic)) return 1;
+	if(packet__read_string(&context->in_packet, &topic, &slen)) return 1;
 #ifdef WITH_CLUSTER
 	if(!context->is_node)
 #endif
-	if(STREMPTY(topic)){
+	if(!slen){
 		/* Invalid publish topic, disconnect client. */
 		mosquitto__free(topic);
 		return 1;
 	}
+
+	if(mosquitto_validate_utf8(topic, slen) != MOSQ_ERR_SUCCESS){
+		mosquitto__free(topic);
+		return 1;
+	}
+
 #ifdef WITH_BRIDGE
 	if(context->bridge && context->bridge->topics && context->bridge->topic_remapping){
 		for(i=0; i<context->bridge->topic_count; i++){
@@ -123,11 +130,6 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 #endif
 	if(mosquitto_pub_topic_check(topic) != MOSQ_ERR_SUCCESS){
 		/* Invalid publish topic, just swallow it. */
-		mosquitto__free(topic);
-		return 1;
-	}
-
-	if(mosquitto_validate_utf8(topic, strlen(topic)) != MOSQ_ERR_SUCCESS){
 		mosquitto__free(topic);
 		return 1;
 	}

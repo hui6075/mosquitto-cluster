@@ -15,6 +15,10 @@ test :
 	$(MAKE) -C broker test
 	$(MAKE) -C lib test
 
+ptest :
+	$(MAKE) -C broker ptest
+	$(MAKE) -C lib ptest
+
 fake_user : fake_user.o
 	${CC} $^ -o $@ ../lib/libmosquitto.so.${SOVERSION}
 	#${CC} $^ -o $@ -lmosquitto

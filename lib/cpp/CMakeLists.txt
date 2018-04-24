@@ -2,15 +2,12 @@ include_directories(${mosquitto_SOURCE_DIR}/lib ${mosquitto_SOURCE_DIR}/lib/cpp
 			${STDBOOL_H_PATH} ${STDINT_H_PATH})
 link_directories(${mosquitto_BINARY_DIR}/lib)
 
-set(C_SRC mosquittopp.cpp mosquittopp.h)
+set(CPP_SRC mosquittopp.cpp mosquittopp.h)
 
-add_library(mosquittopp_obj OBJECT ${C_SRC})
-set_target_properties(mosquittopp_obj PROPERTIES
+add_library(mosquittopp SHARED ${CPP_SRC})
+set_target_properties(mosquittopp PROPERTIES
 	POSITION_INDEPENDENT_CODE 1
 )
-
-add_library(mosquittopp SHARED $<TARGET_OBJECTS:mosquittopp_obj>)
-
 target_link_libraries(mosquittopp libmosquitto)
 set_target_properties(mosquittopp PROPERTIES
 	VERSION ${VERSION}
@@ -19,17 +16,15 @@ set_target_properties(mosquittopp PROPERTIES
 install(TARGETS mosquittopp RUNTIME DESTINATION "${BINDIR}" LIBRARY DESTINATION "${LIBDIR}")
 
 if (${WITH_STATIC_LIBRARIES} STREQUAL ON)
-	if (${WITH_PIC} STREQUAL OFF)
 		add_library(mosquittopp_static STATIC
-			$<TARGET_OBJECTS:libmosquitto_obj>
 			${C_SRC}
+		${CPP_SRC}
 		)
-	else (${WITH_PIC} STREQUAL OFF)
-		add_library(mosquittopp_static STATIC
-			$<TARGET_OBJECTS:libmosquitto_obj>
-			$<TARGET_OBJECTS:mosquittopp_obj>
+	if (${WITH_PIC} STREQUAL ON)
+		set_target_properties(mosquittopp_static PROPERTIES
+			POSITION_INDEPENDENT_CODE 1
 		)
-	endif (${WITH_PIC} STREQUAL OFF)
+	endif (${WITH_PIC} STREQUAL ON)
 
 	target_link_libraries(mosquittopp_static ${LIBRARIES})
 

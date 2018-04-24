@@ -20,11 +20,11 @@ publish_packet = mosq_test.gen_publish("retain/qos0/test", qos=0, payload="retai
 subscribe_packet = mosq_test.gen_subscribe(mid, "retain/qos0/test", 0)
 suback_packet = mosq_test.gen_suback(mid, 0)
 
-cmd = ['../../src/mosquitto', '-p', '1888']
-broker = mosq_test.start_broker(filename=os.path.basename(__file__), cmd=cmd)
+port = mosq_test.get_port()
+broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
 
 try:
-    sock = mosq_test.do_client_connect(connect_packet, connack_packet)
+    sock = mosq_test.do_client_connect(connect_packet, connack_packet, port=port)
     sock.send(publish_packet)
     sock.send(subscribe_packet)
 
@@ -35,8 +35,8 @@ try:
 finally:
     broker.terminate()
     broker.wait()
+    (stdo, stde) = broker.communicate()
     if rc:
-        (stdo, stde) = broker.communicate()
         print(stde)
 
 exit(rc)

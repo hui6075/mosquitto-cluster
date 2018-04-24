@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -230,7 +230,9 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 #ifdef WITH_CLUSTER
 		now = mosquitto_time();
 
-		mosquitto_handle_retain(db ,now);
+		if(db->cluster_retain_delay > 0){
+			mosquitto_handle_retain(db ,now);
+		}
 
 		for(i=0; i<db->config->node_count; i++){
 			node = &(db->config->nodes[i]);
@@ -717,10 +719,10 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context)
 			}
 		}
 #ifdef WITH_EPOLL
-		if (epoll_ctl(db->epollfd, EPOLL_CTL_DEL, context->sock, &ev) == -1) {
+		if (context->sock != INVALID_SOCKET && epoll_ctl(db->epollfd, EPOLL_CTL_DEL, context->sock, &ev) == -1) {
 			log__printf(NULL, MOSQ_LOG_DEBUG, "Error in epoll disconnecting: %s", strerror(errno));
 		}
-#endif		
+#endif
 		context__disconnect(db, context);
 #ifdef WITH_BRIDGE
 		if(context->clean_session && !context->bridge){

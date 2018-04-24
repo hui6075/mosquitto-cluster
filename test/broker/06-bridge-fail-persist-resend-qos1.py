@@ -14,6 +14,24 @@ if cmd_subfolder not in sys.path:
 
 import mosq_test
 
+def write_config(filename, port1, port2):
+    with open(filename, 'w') as f:
+        f.write("port %d\n" % (port2))
+        f.write("\n")
+        f.write("connection bridge-u-test\n")
+        f.write("remote_clientid bridge-u-test\n")
+        f.write("address 127.0.0.1:%d\n" % (port1))
+        f.write("topic bridge/# out\n")
+        f.write("\n")
+        f.write("cleansession true\n")
+        f.write("notifications false\n")
+        f.write("restart_timeout 5\n")
+        f.write("try_private false\n")
+
+(port1, port2) = mosq_test.get_port(2)
+conf_file = os.path.basename(__file__).replace('.py', '.conf')
+write_config(conf_file, port1, port2)
+
 rc = 1
 keepalive = 60
 connect_packet = mosq_test.gen_connect("bridge-u-test", keepalive=keepalive)
@@ -40,10 +58,10 @@ else:
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 sock.settimeout(10)
-sock.bind(('', 1888))
+sock.bind(('', port1))
 sock.listen(5)
 
-broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=1889)
+broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port2, use_conf=True)
 time.sleep(sleep_time)
 
 try:
@@ -66,10 +84,11 @@ try:
                 rc = 0
 
 finally:
+    os.remove(conf_file)
     broker.terminate()
     broker.wait()
+    (stdo, stde) = broker.communicate()
     if rc:
-        (stdo, stde) = broker.communicate()
         print(stde)
     sock.close()
 

@@ -10,12 +10,14 @@ int main(int argc, char *argv[])
 	int rc;
 	struct mosquitto *mosq;
 
+	int port = atoi(argv[1]);
+
 	mosquitto_lib_init();
 
 	mosq = mosquitto_new("01-unpwd-set", true, NULL);
 	mosquitto_username_pw_set(mosq, "uname", ";'[08gn=#");
 
-	rc = mosquitto_connect(mosq, "localhost", 1888, 60);
+	rc = mosquitto_connect(mosq, "localhost", port, 60);
 
 	while(run == -1){
 		mosquitto_loop(mosq, -1, 1);

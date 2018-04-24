@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,10 @@ Contributors:
 #include <stdio.h>
 #include <string.h>
 
+#ifdef WITH_BROKER
+#  include "mosquitto_broker_internal.h"
+#endif
+
 #include "mosquitto.h"
 #include "logging_mosq.h"
 #include "memory_mosq.h"
@@ -28,9 +32,6 @@ Contributors:
 #include "read_handle.h"
 #include "send_mosq.h"
 #include "util_mosq.h"
-#ifdef WITH_BROKER
-#include "mosquitto_broker_internal.h"
-#endif
 
 
 int handle__unsuback(struct mosquitto *mosq)

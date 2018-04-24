@@ -25,11 +25,13 @@ int main(int argc, char *argv[])
 {
 	struct mosquittopp_test *mosq;
 
+	int port = atoi(argv[1]);
+
 	mosqpp::lib_init();
 
 	mosq = new mosquittopp_test("01-keepalive-pingreq");
 
-	mosq->connect("localhost", 1888, 4);
+	mosq->connect("localhost", port, 4);
 
 	while(run == -1){
 		mosq->loop();

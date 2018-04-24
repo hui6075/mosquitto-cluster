@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -36,6 +36,7 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 	uint8_t *payload = NULL, *tmp_payload;
 	uint32_t payloadlen = 0;
 	int len;
+	int slen;
 	char *sub_mount;
 
 	if(!context) return MOSQ_ERR_INVAL;
@@ -56,7 +57,7 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 
 	while(context->in_packet.pos < context->in_packet.remaining_length){
 		sub = NULL;
-		if(packet__read_string(&context->in_packet, &sub)){
+		if(packet__read_string(&context->in_packet, &sub, &slen)){
 			mosquitto__free(payload);
 			return 1;
 		}
@@ -65,7 +66,7 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 #ifdef WITH_CLUSTER
 			if(!context->is_peer)
 #endif
-			if(STREMPTY(sub)){
+			if(!slen){
 				log__printf(NULL, MOSQ_LOG_INFO,
 						"Empty subscription string from %s, disconnecting.",
 						context->address);
@@ -87,7 +88,7 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 #ifdef WITH_CLUSTER
 			if(!context->is_peer)
 #endif
-			if(mosquitto_validate_utf8(sub, strlen(sub))){
+			if(mosquitto_validate_utf8(sub, slen)){
 				log__printf(NULL, MOSQ_LOG_INFO,
 						"Malformed UTF-8 in subscription string from %s, disconnecting.",
 						context->id);
@@ -109,7 +110,7 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 				return 1;
 			}
 			if(context->listener && context->listener->mount_point){
-				len = strlen(context->listener->mount_point) + strlen(sub) + 1;
+				len = strlen(context->listener->mount_point) + slen + 1;
 				sub_mount = mosquitto__malloc(len+1);
 				if(!sub_mount){
 					mosquitto__free(sub);

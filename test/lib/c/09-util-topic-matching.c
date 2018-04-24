@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <mosquitto.h>
 
+#define EXPECT_MATCH(A, B) do_check((A), (B), false)
+#define EXPECT_NOMATCH(A, B) do_check((A), (B), true)
+
 void do_check(const char *sub, const char *topic, bool bad_res)
 {
 	bool match;
@@ -16,42 +19,44 @@ void do_check(const char *sub, const char *topic, bool bad_res)
 
 int main(int argc, char *argv[])
 {
-	do_check("foo/#", "foo/", false);
-	do_check("foo#", "foo", true);
-	do_check("fo#o/", "foo", true);
-	do_check("foo#", "fooa", true);
-	do_check("foo+", "foo", true);
-	do_check("foo+", "fooa", true);
+	EXPECT_MATCH("foo/#", "foo/");
+	EXPECT_NOMATCH("foo#", "foo");
+	EXPECT_NOMATCH("fo#o/", "foo");
+	EXPECT_NOMATCH("foo#", "fooa");
+	EXPECT_NOMATCH("foo+", "foo");
+	EXPECT_NOMATCH("foo+", "fooa");
 
-	do_check("test/6/#", "test/3", true);
-	do_check("foo/bar", "foo/bar", false);
-	do_check("foo/+", "foo/bar", false);
-	do_check("foo/+/baz", "foo/bar/baz", false);
+	EXPECT_NOMATCH("test/6/#", "test/3");
+	EXPECT_MATCH("foo/bar", "foo/bar");
+	EXPECT_MATCH("foo/+", "foo/bar");
+	EXPECT_MATCH("foo/+/baz", "foo/bar/baz");
 
-	do_check("A/B/+/#", "A/B/B/C", false);
+	EXPECT_MATCH("A/B/+/#", "A/B/B/C");
 
-	do_check("foo/+/#", "foo/bar/baz", false);
-	do_check("#", "foo/bar/baz", false);
+	EXPECT_MATCH("foo/+/#", "foo/bar/baz");
+	EXPECT_MATCH("foo/+/#", "foo/bar");
+	EXPECT_MATCH("#", "foo/bar/baz");
+	EXPECT_MATCH("#", "foo/bar/baz");
 
-	do_check("foo/bar", "foo", true);
-	do_check("foo/+", "foo/bar/baz", true);
-	do_check("foo/+/baz", "foo/bar/bar", true);
+	EXPECT_NOMATCH("foo/bar", "foo");
+	EXPECT_NOMATCH("foo/+", "foo/bar/baz");
+	EXPECT_NOMATCH("foo/+/baz", "foo/bar/bar");
 
-	do_check("foo/+/#", "fo2/bar/baz", true);
+	EXPECT_NOMATCH("foo/+/#", "fo2/bar/baz");
 
-	do_check("#", "/foo/bar", false);
-	do_check("/#", "/foo/bar", false);
-	do_check("/#", "foo/bar", true);
+	EXPECT_MATCH("#", "/foo/bar");
+	EXPECT_MATCH("/#", "/foo/bar");
+	EXPECT_NOMATCH("/#", "foo/bar");
 
 
-	do_check("foo//bar", "foo//bar", false);
-	do_check("foo//+", "foo//bar", false);
-	do_check("foo/+/+/baz", "foo///baz", false);
-	do_check("foo/bar/+", "foo/bar/", false);
+	EXPECT_MATCH("foo//bar", "foo//bar");
+	EXPECT_MATCH("foo//+", "foo//bar");
+	EXPECT_MATCH("foo/+/+/baz", "foo///baz");
+	EXPECT_MATCH("foo/bar/+", "foo/bar/");
 
-	do_check("$SYS/bar", "$SYS/bar", false);
-	do_check("#", "$SYS/bar", true);
-	do_check("$BOB/bar", "$SYS/bar", true);
+	EXPECT_MATCH("$SYS/bar", "$SYS/bar");
+	EXPECT_NOMATCH("#", "$SYS/bar");
+	EXPECT_NOMATCH("$BOB/bar", "$SYS/bar");
 
 	return 0;
 }

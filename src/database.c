@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -132,7 +132,7 @@ int db__open(struct mosquitto__config *config, struct mosquitto_db *db)
 
 	db->subs = NULL;
 
-	subhier = sub__add_hier_entry(&db->subs, " ", strlen(" "));
+	subhier = sub__add_hier_entry(&db->subs, "", strlen(""));
 	if(!subhier) return MOSQ_ERR_NOMEM;
 
 	subhier = sub__add_hier_entry(&db->subs, "$SYS", strlen("$SYS"));

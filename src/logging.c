@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,6 @@ Contributors:
 #include <string.h>
 #ifndef WIN32
 #include <syslog.h>
-#include <sys/time.h>
 #endif
 #include <time.h>
 
@@ -224,7 +223,6 @@ int log__vprintf(int priority, const char *fmt, va_list va)
 				fflush(int_db.config->log_fptr);
 				last_flush = now;
 			}
-			fflush(int_db.config->log_fptr);
 		}
 		if(log_destinations & MQTT3_LOG_SYSLOG){
 #ifndef WIN32

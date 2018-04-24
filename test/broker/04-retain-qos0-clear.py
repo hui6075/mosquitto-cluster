@@ -28,11 +28,11 @@ mid_unsub = 593
 unsubscribe_packet = mosq_test.gen_unsubscribe(mid_unsub, "retain/clear/test")
 unsuback_packet = mosq_test.gen_unsuback(mid_unsub)
 
-cmd = ['../../src/mosquitto', '-p', '1888', '-v']
-broker = mosq_test.start_broker(filename=os.path.basename(__file__), cmd=cmd)
+port = mosq_test.get_port()
+broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
 
 try:
-    sock = mosq_test.do_client_connect(connect_packet, connack_packet, timeout=4)
+    sock = mosq_test.do_client_connect(connect_packet, connack_packet, timeout=4, port=port)
     # Send retained message
     sock.send(publish_packet)
     # Subscribe to topic, we should get the retained message back.
@@ -64,8 +64,8 @@ try:
 finally:
     broker.terminate()
     broker.wait()
+    (stdo, stde) = broker.communicate()
     if rc:
-        (stdo, stde) = broker.communicate()
         print(stde)
 
 exit(rc)

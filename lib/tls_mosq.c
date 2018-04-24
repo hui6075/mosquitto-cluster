@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2013-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -16,12 +16,15 @@ Contributors:
 
 #ifdef WITH_TLS
 
+#include "config.h"
+
 #ifdef WIN32
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
 #else
 #  include <arpa/inet.h>
 #  include <sys/socket.h>
+#  include <strings.h>
 #endif
 
 #include <string.h>
@@ -132,14 +135,22 @@ int mosquitto__verify_certificate_hostname(X509 *cert, const char *hostname)
 		for(i=0; i<sk_GENERAL_NAME_num(san); i++){
 			nval = sk_GENERAL_NAME_value(san, i);
 			if(nval->type == GEN_DNS){
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 				data = ASN1_STRING_data(nval->d.dNSName);
+#else
+				data = ASN1_STRING_get0_data(nval->d.dNSName);
+#endif
 				if(data && !mosquitto__cmp_hostname_wildcard((char *)data, hostname)){
 					sk_GENERAL_NAME_pop_free(san, GENERAL_NAME_free);
 					return 1;
 				}
 				have_san_dns = true;
 			}else if(nval->type == GEN_IPADD){
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 				data = ASN1_STRING_data(nval->d.iPAddress);
+#else
+				data = ASN1_STRING_get0_data(nval->d.iPAddress);
+#endif
 				if(nval->d.iPAddress->length == 4 && ipv4_ok){
 					if(!memcmp(ipv4_addr, data, 4)){
 						sk_GENERAL_NAME_pop_free(san, GENERAL_NAME_free);

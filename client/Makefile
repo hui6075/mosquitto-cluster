@@ -17,13 +17,16 @@ static_sub : sub_client.o client_shared.o ../lib/libmosquitto.a
 mosquitto_pub : pub_client.o client_shared.o
 	${CROSS_COMPILE}${CC} $^ -o $@ ${CLIENT_LDFLAGS}
 
-mosquitto_sub : sub_client.o client_shared.o
+mosquitto_sub : sub_client.o sub_client_output.o client_shared.o
 	${CROSS_COMPILE}${CC} $^ -o $@ ${CLIENT_LDFLAGS}
 
 pub_client.o : pub_client.c ../lib/libmosquitto.so.${SOVERSION}
 	${CROSS_COMPILE}${CC} -c $< -o $@ ${CLIENT_CFLAGS}
 
 sub_client.o : sub_client.c ../lib/libmosquitto.so.${SOVERSION}
+	${CROSS_COMPILE}${CC} -c $< -o $@ ${CLIENT_CFLAGS}
+
+sub_client_output.o : sub_client_output.c ../lib/libmosquitto.so.${SOVERSION}
 	${CROSS_COMPILE}${CC} -c $< -o $@ ${CLIENT_CFLAGS}
 
 client_shared.o : client_shared.c client_shared.h

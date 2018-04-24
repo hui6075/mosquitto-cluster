@@ -344,18 +344,6 @@
 				</listitem>
 			</varlistentry>
 			<varlistentry>
-				<term><option>$SYS/broker/timestamp</option></term>
-				<listitem>
-					<para>The timestamp at which this particular build of the broker was made. Static.</para>
-				</listitem>
-			</varlistentry>
-			<varlistentry>
-				<term><option>$SYS/broker/uptime</option></term>
-				<listitem>
-					<para>The amount of time in seconds the broker has been online.</para>
-				</listitem>
-			</varlistentry>
-			<varlistentry>
 				<term><option>$SYS/broker/version</option></term>
 				<listitem>
 					<para>The version of the broker. Static.</para>

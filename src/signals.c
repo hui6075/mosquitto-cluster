@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2016-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@ Contributors:
 #include "config.h"
 
 #ifndef WIN32
-/* For initgroups() */
-#  define _BSD_SOURCE
 #  include <unistd.h>
 #  include <grp.h>
 #  include <assert.h>
@@ -120,16 +118,17 @@ DWORD WINAPI SigThreadProc(void* data)
 	while (true) {
 		int wr = WaitForMultipleObjects(sizeof(evt) / sizeof(HANDLE), evt, FALSE, INFINITE);
 		switch (wr) {
-		case WAIT_OBJECT_0 + 0:
-			handle_sigint(SIGINT);
-			break;
-		case WAIT_OBJECT_0 + 1:
-			flag_reload = true;
-			continue;
-		case WAIT_OBJECT_0 + 2:
-			handle_sigusr1(0);
-			continue;
-		break;
+			case WAIT_OBJECT_0 + 0:
+				handle_sigint(SIGINT);
+				break;
+			case WAIT_OBJECT_0 + 1:
+				flag_reload = true;
+				continue;
+			case WAIT_OBJECT_0 + 2:
+				handle_sigusr1(0);
+				continue;
+				break;
+		}
 	}
 	CloseHandle(evt[0]);
 	CloseHandle(evt[1]);

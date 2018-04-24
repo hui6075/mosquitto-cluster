@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2010-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2010-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -178,7 +178,7 @@ void message__reconnect_reset(struct mosquitto *mosq)
 			* whatever the client has got. */
 		}
 		prev = message;
-		message = message->next;
+		if(message) message = message->next;
 	}
 	mosq->in_messages_last = prev;
 	pthread_mutex_unlock(&mosq->in_message_mutex);

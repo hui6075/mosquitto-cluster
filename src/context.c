@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -36,7 +36,8 @@ struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock)
 
 	context = mosquitto__calloc(1, sizeof(struct mosquitto));
 	if(!context) return NULL;
-	
+
+	context->pollfd_index = -1;
 	context->state = mosq_cs_new;
 	context->sock = sock;
 	context->last_msg_in = mosquitto_time();
@@ -113,7 +114,7 @@ void context__cleanup(struct mosquitto_db *db, struct mosquitto *context, bool d
 {
 	struct mosquitto__packet *packet;
 	struct mosquitto_client_msg *msg, *next;
-	
+
 	if(!context) return;
 
 #ifdef WITH_BRIDGE
@@ -149,14 +150,12 @@ void context__cleanup(struct mosquitto_db *db, struct mosquitto *context, bool d
 		context->bridge->remote_password = NULL;
 	}
 #endif
-
 #ifdef WITH_CLUSTER
 	if(context->is_node){
 		log__printf(NULL, MOSQ_LOG_NOTICE, "context__cleanup,client_id:%s.addr:%p,do_free:%s",context->id,context,do_free?"true":"false");
 		node__cleanup(db, context);
 	}
 #endif
-
 	mosquitto__free(context->username);
 	context->username = NULL;
 

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2016-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -14,13 +14,15 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 
+#include "config.h"
+
+#include "mosquitto_broker_internal.h"
+#include "mosquitto_internal.h"
+#include "mosquitto_broker.h"
+
 #ifdef WITH_TLS
 #  include <openssl/ssl.h>
 #endif
-
-#include "mosquitto_internal.h"
-#include "mosquitto_broker.h"
-#include "mosquitto_broker_internal.h"
 
 const char *mosquitto_client_address(const struct mosquitto *client)
 {

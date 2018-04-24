@@ -13,6 +13,20 @@ if cmd_subfolder not in sys.path:
 
 import mosq_test
 
+def write_config(filename, port1, port2):
+    with open(filename, 'w') as f:
+        f.write("port %d\n" % (port2))
+        f.write("\n")
+        f.write("connection bridge_sample\n")
+        f.write("address 127.0.0.1:%d\n" % (port1))
+        f.write("topic bridge/# both 2\n")
+        f.write("notifications false\n")
+        f.write("restart_timeout 5\n")
+
+(port1, port2) = mosq_test.get_port(2)
+conf_file = os.path.basename(__file__).replace('.py', '.conf')
+write_config(conf_file, port1, port2)
+
 rc = 1
 keepalive = 60
 client_id = socket.gethostname()+".bridge_sample"
@@ -41,10 +55,10 @@ pubcomp_packet = mosq_test.gen_pubcomp(mid)
 ssock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 ssock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 ssock.settimeout(40)
-ssock.bind(('', 1888))
+ssock.bind(('', port1))
 ssock.listen(5)
 
-broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=1889)
+broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port2, use_conf=True)
 
 try:
     (bridge, address) = ssock.accept()
@@ -56,9 +70,10 @@ try:
         if mosq_test.expect_packet(bridge, "subscribe", subscribe_packet):
             bridge.send(suback_packet)
 
-            pub = subprocess.Popen(['./06-bridge-br2b-disconnect-qos2-helper.py'])
+            pub = subprocess.Popen(['./06-bridge-br2b-disconnect-qos2-helper.py', str(port2)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if pub.wait():
                 exit(1)
+            (stdo, stde) = pub.communicate()
 
             if mosq_test.expect_packet(bridge, "publish", publish_packet):
                 bridge.close()
@@ -93,6 +108,7 @@ try:
 
     bridge.close()
 finally:
+    os.remove(conf_file)
     try:
         bridge.close()
     except NameError:
@@ -100,8 +116,8 @@ finally:
 
     broker.terminate()
     broker.wait()
+    (stdo, stde) = broker.communicate()
     if rc:
-        (stdo, stde) = broker.communicate()
         print(stde)
     ssock.close()
 

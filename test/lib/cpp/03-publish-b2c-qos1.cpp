@@ -58,12 +58,14 @@ int main(int argc, char *argv[])
 {
 	struct mosquittopp_test *mosq;
 
+	int port = atoi(argv[1]);
+
 	mosqpp::lib_init();
 
 	mosq = new mosquittopp_test("publish-qos1-test");
 	mosq->message_retry_set(3);
 
-	mosq->connect("localhost", 1888, 60);
+	mosq->connect("localhost", port, 60);
 
 	while(1){
 		mosq->loop();

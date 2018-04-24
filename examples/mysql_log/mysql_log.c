@@ -43,8 +43,13 @@ void message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_
 
 	bind[0].buffer_type = MYSQL_TYPE_STRING;
 	bind[0].buffer = message->topic;
+	bind[0].buffer_length = strlen(message->topic);
+	// Note: payload is normally a binary blob and could contains
+	// NULL byte. This sample does not handle it and assume payload is a
+	// string.
 	bind[1].buffer_type = MYSQL_TYPE_STRING;
 	bind[1].buffer = message->payload;
+	bind[1].buffer_length = message->payloadlen;
 
 	mysql_stmt_bind_param(stmt, bind);
 	mysql_stmt_execute(stmt);

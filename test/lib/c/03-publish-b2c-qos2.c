@@ -48,6 +48,8 @@ int main(int argc, char *argv[])
 	int rc;
 	struct mosquitto *mosq;
 
+	int port = atoi(argv[1]);
+
 	mosquitto_lib_init();
 
 	mosq = mosquitto_new("publish-qos2-test", true, &run);
@@ -55,7 +57,7 @@ int main(int argc, char *argv[])
 	mosquitto_message_callback_set(mosq, on_message);
 	mosquitto_message_retry_set(mosq, 5);
 
-	rc = mosquitto_connect(mosq, "localhost", 1888, 60);
+	rc = mosquitto_connect(mosq, "localhost", port, 60);
 
 	while(run == -1){
 		mosquitto_loop(mosq, 300, 1);

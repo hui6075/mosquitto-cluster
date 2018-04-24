@@ -8,6 +8,8 @@ if cmd_subfolder not in sys.path:
 
 import mosq_test
 
+port = mosq_test.get_port()
+
 rc = 1
 keepalive = 60
 connect_packet = mosq_test.gen_connect("test-helper", keepalive=keepalive)
@@ -17,7 +19,7 @@ publish_packet = mosq_test.gen_publish("bridge/ssl/test", qos=0, payload="messag
 
 disconnect_packet = mosq_test.gen_disconnect()
 
-sock = mosq_test.do_client_connect(connect_packet, connack_packet, port=1889, connack_error="helper connack")
+sock = mosq_test.do_client_connect(connect_packet, connack_packet, port=port, connack_error="helper connack")
 sock.send(publish_packet)
 sock.send(disconnect_packet)
 sock.close()

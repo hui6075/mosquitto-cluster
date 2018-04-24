@@ -17,12 +17,14 @@ int main(int argc, char *argv[])
 	int rc;
 	struct mosquitto *mosq;
 
+	int port = atoi(argv[1]);
+
 	mosquitto_lib_init();
 
 	mosq = mosquitto_new("01-keepalive-pingreq", true, NULL);
 	mosquitto_connect_callback_set(mosq, on_connect);
 
-	rc = mosquitto_connect(mosq, "localhost", 1888, 4);
+	rc = mosquitto_connect(mosq, "localhost", port, 4);
 
 	while(run == -1){
 		mosquitto_loop(mosq, -1, 1);

@@ -43,6 +43,8 @@ int main(int argc, char *argv[])
 {
 	struct mosquittopp_test *mosq;
 
+	int port = atoi(argv[1]);
+
 	mosqpp::lib_init();
 
 	mosq = new mosquittopp_test("08-ssl-connect-crt-auth-enc");
@@ -50,7 +52,7 @@ int main(int argc, char *argv[])
 	mosq->tls_opts_set(1, "tlsv1", NULL);
 	//mosq->tls_set("../ssl/test-ca.crt", NULL, "../ssl/client.crt", "../ssl/client.key");
 	mosq->tls_set("../ssl/all-ca.crt", NULL, "../ssl/client-encrypted.crt", "../ssl/client-encrypted.key", password_callback);
-	mosq->connect("localhost", 1888, 60);
+	mosq->connect("localhost", port, 60);
 
 	while(run == -1){
 		mosq->loop();

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ Contributors:
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <netinet/tcp.h>
 #else
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -120,6 +121,14 @@ int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
 		return -1;
 	}
 #endif
+
+	if(db->config->set_tcp_nodelay){
+		int flag = 1;
+		if(setsockopt(new_sock, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int) != 0)){
+			log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Unable to set TCP_NODELAY.");
+		}
+	}
+
 	new_context = context__init(db, new_sock);
 	if(!new_context){
 		COMPAT_CLOSE(new_sock);
@@ -200,7 +209,7 @@ static int client_certificate_verify(int preverify_ok, X509_STORE_CTX *ctx)
 }
 #endif
 
-#ifdef REAL_WITH_TLS_PSK
+#ifdef WITH_TLS_PSK
 static unsigned int psk_server_callback(SSL *ssl, const char *identity, unsigned char *psk, unsigned int max_psk_len)
 {
 	struct mosquitto_db *db;
@@ -254,44 +263,39 @@ static unsigned int psk_server_callback(SSL *ssl, const char *identity, unsigned
 #ifdef WITH_TLS
 static int mosquitto__tls_server_ctx(struct mosquitto__listener *listener)
 {
-	int ssl_options = 0;
 	char buf[256];
 	int rc;
-#ifdef WITH_EC
-#if OPENSSL_VERSION_NUMBER >= 0x10000000L && OPENSSL_VERSION_NUMBER < 0x10002000L
-	EC_KEY *ecdh = NULL;
-#endif
+
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+	listener->ssl_ctx = SSL_CTX_new(SSLv23_server_method());
+#else
+	listener->ssl_ctx = SSL_CTX_new(TLS_server_method());
 #endif
 
-#if OPENSSL_VERSION_NUMBER >= 0x10001000L
-	if(listener->tls_version == NULL){
-		listener->ssl_ctx = SSL_CTX_new(SSLv23_server_method());
-	}else if(!strcmp(listener->tls_version, "tlsv1.2")){
-		listener->ssl_ctx = SSL_CTX_new(TLSv1_2_server_method());
-	}else if(!strcmp(listener->tls_version, "tlsv1.1")){
-		listener->ssl_ctx = SSL_CTX_new(TLSv1_1_server_method());
-	}else if(!strcmp(listener->tls_version, "tlsv1")){
-		listener->ssl_ctx = SSL_CTX_new(TLSv1_server_method());
-	}
-#else
-	listener->ssl_ctx = SSL_CTX_new(SSLv23_server_method());
-#endif
 	if(!listener->ssl_ctx){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to create TLS context.");
 		return 1;
 	}
 
-	/* Don't accept SSLv2 or SSLv3 */
-	ssl_options = SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;
+	if(listener->tls_version == NULL){
+		SSL_CTX_set_options(listener->ssl_ctx, SSL_OP_NO_SSLv3);
+	}else if(!strcmp(listener->tls_version, "tlsv1.2")){
+		SSL_CTX_set_options(listener->ssl_ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1_1 | SSL_OP_NO_TLSv1);
+	}else if(!strcmp(listener->tls_version, "tlsv1.1")){
+		SSL_CTX_set_options(listener->ssl_ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1_2 | SSL_OP_NO_TLSv1);
+	}else if(!strcmp(listener->tls_version, "tlsv1")){
+		SSL_CTX_set_options(listener->ssl_ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1_2 | SSL_OP_NO_TLSv1_1);
+	}
+
 #ifdef SSL_OP_NO_COMPRESSION
 	/* Disable compression */
-	ssl_options |= SSL_OP_NO_COMPRESSION;
+	SSL_CTX_set_options(listener->ssl_ctx, SSL_OP_NO_COMPRESSION);
 #endif
 #ifdef SSL_OP_CIPHER_SERVER_PREFERENCE
 	/* Server chooses cipher */
-	ssl_options |= SSL_OP_CIPHER_SERVER_PREFERENCE;
+	SSL_CTX_set_options(listener->ssl_ctx, SSL_OP_CIPHER_SERVER_PREFERENCE);
 #endif
-	SSL_CTX_set_options(listener->ssl_ctx, ssl_options);
 
 #ifdef SSL_MODE_RELEASE_BUFFERS
 	/* Use even less memory per SSL connection. */
@@ -301,14 +305,6 @@ static int mosquitto__tls_server_ctx(struct mosquitto__listener *listener)
 #ifdef WITH_EC
 #if OPENSSL_VERSION_NUMBER >= 0x10002000L && OPENSSL_VERSION_NUMBER < 0x10100000L
 	SSL_CTX_set_ecdh_auto(listener->ssl_ctx, 1);
-#elif OPENSSL_VERSION_NUMBER >= 0x10000000L && OPENSSL_VERSION_NUMBER < 0x10002000L
-	ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
-	if(!ecdh){
-		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to create TLS ECDH curve.");
-		return 1;
-	}
-	SSL_CTX_set_tmp_ecdh(listener->ssl_ctx, ecdh);
-	EC_KEY_free(ecdh);
 #endif
 #endif
 
@@ -476,7 +472,7 @@ int net__socket_listen(struct mosquitto__listener *listener)
 				X509_STORE_set_flags(store, X509_V_FLAG_CRL_CHECK);
 			}
 
-#  ifdef REAL_WITH_TLS_PSK
+#  ifdef WITH_TLS_PSK
 		}else if(listener->psk_hint){
 			if(tls_ex_index_context == -1){
 				tls_ex_index_context = SSL_get_ex_new_index(0, "client context", NULL, NULL, NULL);
@@ -498,7 +494,7 @@ int net__socket_listen(struct mosquitto__listener *listener)
 					return 1;
 				}
 			}
-#  endif /* REAL_WITH_TLS_PSK */
+#  endif /* WITH_TLS_PSK */
 		}
 #endif /* WITH_TLS */
 		return 0;

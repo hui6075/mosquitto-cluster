@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -17,16 +17,16 @@ Contributors:
 #include <assert.h>
 #include <string.h>
 
+#ifdef WITH_BROKER
+#  include "mosquitto_broker_internal.h"
+#endif
+
 #include "logging_mosq.h"
 #include "memory_mosq.h"
 #include "mosquitto.h"
 #include "mosquitto_internal.h"
 #include "mqtt3_protocol.h"
 #include "packet_mosq.h"
-
-#ifdef WITH_BROKER
-#  include "mosquitto_broker_internal.h"
-#endif
 
 int send__connect(struct mosquitto *mosq, uint16_t keepalive, bool clean_session)
 {

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -52,6 +52,7 @@ int handle__private_subscribe(struct mosquitto_db *db, struct mosquitto *context
 	uint16_t mid;
 	char *sub;
 	char *client_id;
+	int slen;
 
 	if(!(context && context->is_peer))
 		return MOSQ_ERR_PROTOCOL;
@@ -62,7 +63,7 @@ int handle__private_subscribe(struct mosquitto_db *db, struct mosquitto *context
 
 	while(context->in_packet.pos < context->in_packet.remaining_length) {
 		sub = NULL;
-		if(packet__read_string(&context->in_packet, &sub)){/* 1. topic */
+		if(packet__read_string(&context->in_packet, &sub, &slen)){/* 1. topic */
 			return 1;
 		}
 		if(sub){
@@ -71,7 +72,7 @@ int handle__private_subscribe(struct mosquitto_db *db, struct mosquitto *context
 				return 1;
 			}
 
-			if(packet__read_string(&context->in_packet, &client_id)){/* 3. original client id */
+			if(packet__read_string(&context->in_packet, &client_id, &slen)){/* 3. original client id */
 				mosquitto__free(sub);
 				return 1;
 			}
@@ -109,6 +110,7 @@ int handle__private_retain(struct mosquitto_db *db, struct mosquitto *context)
 	uint16_t mid = 0, sub_id;
 	uint32_t payloadlen;
 	int64_t orig_rcv_time;
+	int slen;
 
 	mosquitto__payload_uhpa payload;
 	struct mosquitto_msg_store *stored;
@@ -119,7 +121,7 @@ int handle__private_retain(struct mosquitto_db *db, struct mosquitto *context)
 	if(!(context && context->is_node))
 		return MOSQ_ERR_PROTOCOL;
 
-	if(packet__read_string(&context->in_packet, &topic))/* 1. topic */
+	if(packet__read_string(&context->in_packet, &topic, &slen))/* 1. topic */
 		return 1;
 
 	if(packet__read_byte(&context->in_packet, &qos)){/* 2. QoS */
@@ -134,7 +136,7 @@ int handle__private_retain(struct mosquitto_db *db, struct mosquitto *context)
 		}
 	}
 
-	if(packet__read_string(&context->in_packet, &client_id)){/* 4. client_id */
+	if(packet__read_string(&context->in_packet, &client_id, &slen)){/* 4. client_id */
 		mosquitto__free(topic);
 		return 1;
 	}
@@ -150,7 +152,7 @@ int handle__private_retain(struct mosquitto_db *db, struct mosquitto *context)
 		return 1;
 	}
 
-	if(packet__read_string(&context->in_packet, &rcv_time_hexstr)){/* 6. retain msg recv time */
+	if(packet__read_string(&context->in_packet, &rcv_time_hexstr, &slen)){/* 6. retain msg recv time */
 		mosquitto__free(topic);
 		mosquitto__free(client_id);
 		return 1;
@@ -159,49 +161,52 @@ int handle__private_retain(struct mosquitto_db *db, struct mosquitto *context)
 	mosq_hexstr_to_time(&orig_rcv_time, rcv_time_hexstr);
 	mosquitto__free(rcv_time_hexstr);
 
-	cr = db->retain_list;
-	while(cr){
-		if(cr->sub_id == sub_id)
-			break;
-		cr = cr->next;
-	}
+	if(db->cluster_retain_delay > 0){
+		cr = db->retain_list;
+		while(cr){
+			log__printf(NULL, MOSQ_LOG_DEBUG, "[CLUSTER] finding cr..sub_id:%d, expect_send_time:%ld, now:%ld", cr->sub_id, cr->expect_send_time, mosquitto_time());
+			if(cr->sub_id == sub_id)
+				break;
+			cr = cr->next;
+		}
 
-	if(cr){
-		cr_msg = cr->retain_msgs;
-	}else{
-		log__printf(NULL, MOSQ_LOG_DEBUG, "[CLUSTER] Receive a exceed timeout private retain from node:%s, discard.", context->id);
-		mosquitto__free(topic);
-		mosquitto__free(client_id);
-		return MOSQ_ERR_SUCCESS;
-	}
+		if(cr){
+			cr_msg = cr->retain_msgs;
+		}else{
+			log__printf(NULL, MOSQ_LOG_DEBUG, "[CLUSTER] Receive a exceed timeout private retain from node:%s, discard.", context->id);
+			mosquitto__free(topic);
+			mosquitto__free(client_id);
+			return MOSQ_ERR_SUCCESS;
+		}
 
-	tmp_cr_msg = NULL;
-	while(cr_msg){/* find all same topic retain msg, remove the stale ones. */
-		if(!strcmp(cr_msg->store->topic, topic)){
-			if((int64_t)cr_msg->timestamp >= orig_rcv_time){
-				mosquitto__free(topic);
-				mosquitto__free(client_id);
-				return MOSQ_ERR_SUCCESS;
+		tmp_cr_msg = NULL;
+		while(cr_msg){/* find all same topic retain msg, remove the stale ones. */
+			if(!strcmp(cr_msg->store->topic, topic)){
+				if((int64_t)cr_msg->timestamp >= orig_rcv_time){
+					mosquitto__free(topic);
+					mosquitto__free(client_id);
+					return MOSQ_ERR_SUCCESS;
+				}else{
+					if(cr_msg == cr->retain_msgs){
+						cr->retain_msgs = cr->retain_msgs->next;
+					}else if(cr_msg == cr->retain_msgs->next){
+						prev_cr_msg = cr->retain_msgs;
+					}
+					tmp_cr_msg = cr_msg;
+					cr_msg = cr_msg->next;
+					if(prev_cr_msg)
+						prev_cr_msg->next = cr_msg;
+					mosquitto__free(tmp_cr_msg);
+					db__msg_store_deref(db, &tmp_cr_msg->store);
+				}
 			}else{
-				if(cr_msg == cr->retain_msgs){
-					cr->retain_msgs = cr->retain_msgs->next;
-				}else if(cr_msg == cr->retain_msgs->next){
+				if(cr_msg == cr->retain_msgs->next){
 					prev_cr_msg = cr->retain_msgs;
 				}
-				tmp_cr_msg = cr_msg;
 				cr_msg = cr_msg->next;
 				if(prev_cr_msg)
-					prev_cr_msg->next = cr_msg;
-				mosquitto__free(tmp_cr_msg);
-				db__msg_store_deref(db, &tmp_cr_msg->store);
+					prev_cr_msg = prev_cr_msg->next;
 			}
-		}else{
-			if(cr_msg == cr->retain_msgs->next){
-				prev_cr_msg = cr->retain_msgs;
-			}
-			cr_msg = cr_msg->next;
-			if(prev_cr_msg)
-				prev_cr_msg = prev_cr_msg->next;
 		}
 	}
 
@@ -242,7 +247,7 @@ int handle__private_retain(struct mosquitto_db *db, struct mosquitto *context)
 
 int handle__session_req(struct mosquitto_db *db, struct mosquitto *context)
 {
-	int rc = 0;
+	int rc = 0, slen;
 	uint8_t clean_session;
 	char *client_id;
 	struct mosquitto *client_context;
@@ -250,7 +255,7 @@ int handle__session_req(struct mosquitto_db *db, struct mosquitto *context)
 	if(!context->is_peer)
 		return 1;
 
-	if(packet__read_string(&context->in_packet, &client_id))
+	if(packet__read_string(&context->in_packet, &client_id, &slen))
 		return 1;
 
 	if(packet__read_byte(&context->in_packet, &clean_session))
@@ -283,7 +288,7 @@ int handle__session_resp(struct mosquitto_db *db, struct mosquitto *context)
 	uint8_t sub_qos, pub_qos, pub_flag, pub_dup;
 	uint16_t last_mid, nrsubs, nrpubs, pub_mid;
 	uint32_t pub_payload_len;
-	int i = 0, j;
+	int i = 0, j, slen;
 	bool is_client_dup_sub = false;
 	mosquitto__payload_uhpa pub_payload;
 	enum mosquitto_msg_direction pub_dir;
@@ -296,7 +301,7 @@ int handle__session_resp(struct mosquitto_db *db, struct mosquitto *context)
 	if(!context->is_node)
 		return 1;
 
-	if(packet__read_string(&context->in_packet, &client_id))
+	if(packet__read_string(&context->in_packet, &client_id, &slen))
 		return 1;
 
 	HASH_FIND(hh_id,db->contexts_by_id, client_id, strlen(client_id), client_context);
@@ -323,7 +328,7 @@ int handle__session_resp(struct mosquitto_db *db, struct mosquitto *context)
 
 	/* handle subs */
 	for(; i < client_context->client_sub_count; i ++){
-		if(packet__read_string(&context->in_packet, &sub_topic))
+		if(packet__read_string(&context->in_packet, &sub_topic, &slen))
 			return 1;
 
 		if(packet__read_byte(&context->in_packet, &sub_qos)){
@@ -391,7 +396,7 @@ int handle__session_resp(struct mosquitto_db *db, struct mosquitto *context)
 	if(packet__read_uint16(&context->in_packet, &nrpubs)) return 1;
 	/* handle pubs */
 	for(i = 0; i < nrpubs; i ++){
-		if(packet__read_string(&context->in_packet, &pub_topic)) return 1;
+		if(packet__read_string(&context->in_packet, &pub_topic, &slen)) return 1;
 		if(packet__read_byte(&context->in_packet, &pub_flag)) return 1;
 		pub_qos = pub_flag & 0x03;
 		pub_dup = (pub_flag & 0x04) >> 2;

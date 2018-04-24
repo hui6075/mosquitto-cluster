@@ -51,7 +51,9 @@
 			protocol. Use the password_file option to define the valid
 			usernames and passwords. Be sure to use network encryption if you
 			are using this option otherwise the username and password will be
-			vulnerable to interception.</para>
+			vulnerable to interception. Use the
+			<option>per_listener_settings</option> to control whether passwords
+			are required globally or on a per-listener basis.</para>
 		<para>When using certificate based encryption there are three options
 			that affect authentication. The first is require_certificate, which
 			may be set to true or false. If false, the SSL/TLS component of the
@@ -79,7 +81,8 @@
 			If use_identity_as_username is false, the client may still
 			authenticate using the MQTT username/password if using the
 			password_file option.</para>
-		<para>Both certificate and PSK based encryption are configured on a per-listener basis.</para>
+		<para>Both certificate and PSK based encryption are configured on a
+			per-listener basis.</para>
 		<para>Authentication plugins can be created to augment the
 			password_file, acl_file and psk_file options with e.g. SQL based
 			lookups.</para>
@@ -119,7 +122,7 @@
 					<para><code>user &lt;username&gt;</code></para>
 
 					<para>The username referred to here is the same as in
-						<option>password_fil</option>e. It is not the
+						<option>password_file</option>. It is not the
 						clientid.</para>
 
 					<para>It is also possible to define ACLs based on pattern
@@ -158,8 +161,12 @@
 						connect without providing a username are allowed to
 						connect. If set to <replaceable>false</replaceable>
 						then another means of connection should be created to
-						control authenticated client access.  Defaults to
-						<replaceable>true</replaceable>.</para>
+						control authenticated client access.</para>
+						<para>Defaults to <replaceable>true</replaceable> if no
+						other security options are set. If any other
+						authentication options are set, then
+						<option>allow_anonymous</option> defaults to
+						<replaceable>false</replaceable>.</para>
 					<para>Reloaded on reload signal.</para>
 				</listitem>
 			</varlistentry>
@@ -472,6 +479,27 @@
 						<citerefentry><refentrytitle>mosquitto_passwd</refentrytitle><manvolnum>1</manvolnum></citerefentry>.</para>
 				</listitem> </varlistentry>
 			<varlistentry>
+				<term><option>per_listener_settings</option> [ true | false ]</term>
+				<listitem>
+					<para>If <replaceable>true</replaceable>, then
+						authentication and access control settings will be
+						controlled on a per-listener basis. The following
+						options are affected:</para>
+					<para><option>password_file</option>,
+						<option>acl_file</option>, <option>psk_file</option>,
+						<option>allow_anonymous</option>,
+						<option>allow_zero_length_clientid</option>,
+						<option>auth_plugin</option>,
+						<option>auth_opt_*</option>,
+						<option>auto_id_prefix</option>.</para>
+					<para>The default behaviour is for this to be set to
+						<replaceable>false</replaceable>, which maintains the
+						settings behaviour from previous versions of
+						mosquitto.</para>
+					<para>Reloaded on reload signal.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
 				<term><option>persistence</option> [ true | false ]</term>
 				<listitem>
 					<para>If <replaceable>true</replaceable>, connection,
@@ -582,6 +610,17 @@
 				<listitem>
 					<para>This is a synonym of the <option>persistence</option>
 						option.</para>
+					<para>Reloaded on reload signal.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>set_tcp_nodelay</option> [ true | false ]</term>
+				<listitem>
+					<para>If set to true, the TCP_NODELAY option will be set on
+							client sockets to disable Nagle's algorithm. This
+							has the effect of reducing latency of some messages
+							at potentially increasing the number of TCP packets
+							being sent. Defaults to false.</para>
 					<para>Reloaded on reload signal.</para>
 				</listitem>
 			</varlistentry>
@@ -814,7 +853,7 @@
 							that are trusted. For <option>capath</option> to
 							work correctly, the certificates files must have
 							".pem" as the file ending and you must run
-							"c_rehash &lt;path to capath&gt;" each time you
+							"openssl rehash &lt;path to capath&gt;" each time you
 							add/remove a certificate.</para>
 					</listitem>
 				</varlistentry>
@@ -1078,9 +1117,9 @@
 				<listitem>
 					<para>Set the clientid to use on the local broker. If not
 						defined, this defaults to
-						<option>local.&lt;clientid&gt;</option>. If you are
+						<option>local.&lt;remote_clientid&gt;</option>. If you are
 						bridging a broker to itself, it is important that
-						local_clientid and clientid do not match.</para>
+						local_clientid and remote_clientid do not match.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -1106,7 +1145,7 @@
 						notification messages to the local and remote brokers
 						giving information about the state of the bridge
 						connection. Retained messages are published to the
-						topic $SYS/broker/connection/&lt;clientid&gt;/state
+						topic $SYS/broker/connection/&lt;remote_clientid&gt;/state
 						unless otherwise set with
 						<option>notification_topic</option>s.  If the message
 						is 1 then the connection is active, or 0 if the
@@ -1129,7 +1168,7 @@
 					<para>Choose the topic on which notifications will be
 						published for this bridge. If not set the messages will
 						be sent on the topic
-						$SYS/broker/connection/&lt;clientid&gt;/state.</para>
+						$SYS/broker/connection/&lt;remote_clientid&gt;/state.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
@@ -1352,21 +1391,6 @@ topic clients/total in 0 test/mosquitto/org $SYS/broker/
 				configure SSL/TLS support.</para>
 			<variablelist>
 				<varlistentry>
-					<term><option>bridge_attempt_unsubscribe</option> [ true | false ]</term>
-					<listitem>
-						<para>If a bridge has topics that have "out" direction,
-							the default behaviour is to send an unsubscribe
-							request to the remote broker on that topic. This
-							means that changing a topic direction from "in" to
-							"out" will not keep receiving incoming messages.
-							Sending these unsubscribe requests is not always
-							desirable, setting
-							<option>bridge_attempt_unsubscribe</option> to
-							<replaceable>false</replaceable> will disable
-							sending the unsubscribe request.</para>
-					</listitem>
-				</varlistentry>
-				<varlistentry>
 					<term><option>bridge_cafile</option> <replaceable>file path</replaceable></term>
 					<listitem>
 						<para>One of <option>bridge_cafile</option> or
@@ -1389,7 +1413,7 @@ topic clients/total in 0 test/mosquitto/org $SYS/broker/
 							certificates that have signed the certificate for
 							the remote broker. For bridge_capath to work
 							correctly, the certificate files must have ".crt"
-							as the file ending and you must run "c_rehash
+							as the file ending and you must run "openssl rehash
 							&lt;path to bridge_capath&gt;" each time you
 							add/remove a certificate.</para>
 					</listitem>

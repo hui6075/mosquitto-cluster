@@ -50,6 +50,7 @@
 			<arg choice='opt' rep='repeat'><option>-U</option> <replaceable>unsub-topic</replaceable></arg>
 			<arg><option>-v</option></arg>
 			<arg><option>-V</option> <replaceable>protocol-version</replaceable></arg>
+			<arg><option>-W</option> <replaceable>message processing timeout</replaceable></arg>
 			<arg><option>--proxy</option> <replaceable>socks-url</replaceable></arg>
 			<arg><option>--quiet</option></arg>
 			<arg>
@@ -95,6 +96,19 @@
 			unsubscribe from topics (see the <option>-U</option> option).
 			Unsubscribing from topics is useful for clients connecting with
 			clean session set to false. </para>
+	</refsect1>
+
+	<refsect1>
+		<title>Encrypted Connections</title>
+		<para><command>mosquitto_sub</command> supports TLS encrypted
+			connections. It is strongly recommended that you use an encrypted
+			connection for anything more than the most basic setup.</para>
+		<para>To enable TLS connections when using x509 certificates, one of
+			either <option>--cafile</option> or <option>--capath</option> must
+			be provided as an option.</para>
+		<para>To enable TLS connections when using TLS-PSK, you must use the
+			<option>--psk</option> and the <option>--psk-identity</option>
+			options.</para>
 	</refsect1>
 
 	<refsect1>
@@ -152,7 +166,7 @@
 						communication.</para>
 					<para>For <option>--capath</option> to work correctly, the
 						certificate files must have ".crt" as the file ending
-						and you must run "c_rehash &lt;path to capath&gt;" each
+						and you must run "openssl rehash &lt;path to capath&gt;" each
 						time you add/remove a certificate.</para>
 					<para>See also <option>--cafile</option></para>
 				</listitem>
@@ -516,6 +530,16 @@
 				</listitem>
 			</varlistentry>
 			<varlistentry>
+				<term><option>-W</option></term>
+				<listitem>
+					<para>Provide a timeout as an integer number of seconds.
+						mosquitto_sub will stop processing messages and
+						disconnect after this number of seconds has
+						passed. The timeout starts just after the client has
+						connected to the broker.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
 				<term><option>--will-payload</option></term>
 				<listitem>
 					<para>Specify a message that will be stored by the broker
@@ -593,7 +617,8 @@
 				<listitem><para><option>%q</option> the message QoS.</para></listitem>
 				<listitem><para><option>%r</option> the retained flag for the message.</para></listitem>
 				<listitem><para><option>%t</option> the message topic.</para></listitem>
-				<listitem><para><option>%x</option> the payload with each byte as a hexadecimal number.</para></listitem>
+				<listitem><para><option>%x</option> the payload with each byte as a hexadecimal number (lower case).</para></listitem>
+				<listitem><para><option>%X</option> the payload with each byte as a hexadecimal number (upper case).</para></listitem>
 			</itemizedlist>
 		</refsect2>
 

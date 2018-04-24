@@ -72,4 +72,4 @@ cat test-signing-ca.crt test-root-ca.crt > all-ca.crt
 #mkdir certs
 #cp test-signing-ca.crt certs/test-signing-ca.pem
 #cp test-root-ca.crt certs/test-root.ca.pem
-c_rehash certs
+openssl rehash certs

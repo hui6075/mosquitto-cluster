@@ -24,7 +24,7 @@ ifeq ($(UNAME),Darwin)
 endif
 
 ifeq ($(WITH_CLUSTER)_$(WITH_BRIDGE),yes_yes)
-	$(error Please do not compile with both broker and bridge)
+	$(error Please DO NOT compile with both broker and bridge)
 endif
 
 	set -e; for d in ${DIRS}; do $(MAKE) -C $${d}; done
@@ -39,6 +39,9 @@ reallyclean :
 	set -e; for d in ${DOCDIRS}; do $(MAKE) -C $${d} reallyclean; done
 	$(MAKE) -C test reallyclean
 	-rm -f *.orig
+
+ptest : mosquitto
+	$(MAKE) -C test ptest
 
 test : mosquitto
 	$(MAKE) -C test test
@@ -56,7 +59,7 @@ endif
 
 uninstall :
 	set -e; for d in ${DIRS}; do $(MAKE) -C $${d} uninstall; done
-	rm -f "${DESTDIR}/etc/mosquitto/mosquitto.conf"
+	rm -f "${DESTDIR}/etc/mosquitto/mosquitto.conf.example"
 	rm -f "${DESTDIR}/etc/mosquitto/aclfile.example"
 	rm -f "${DESTDIR}/etc/mosquitto/pwfile.example"
 	rm -f "${DESTDIR}/etc/mosquitto/pskfile.example"

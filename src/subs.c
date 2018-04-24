@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2010-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2010-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -194,7 +194,7 @@ static int sub__topic_tokenise(const char *subtopic, struct sub__token **topics)
 	assert(topics);
 
 	if(subtopic[0] != '$'){
-		new_topic = sub__topic_append(&tail, topics, " ");
+		new_topic = sub__topic_append(&tail, topics, "");
 		if(!new_topic) goto cleanup;
 	}
 
@@ -502,8 +502,6 @@ int sub__remove(struct mosquitto_db *db, struct mosquitto *context, const char *
 	HASH_FIND(hh, root, UHPA_ACCESS_TOPIC(tokens), tokens->topic_len, subhier);
 	if(subhier){
 		rc = sub__remove_recurse(db, context, subhier, tokens);
-	}else{
-		printf("nope\n");
 	}
 
 	sub__topic_tokens_free(tokens);
@@ -669,9 +667,12 @@ static int retain__process(struct mosquitto_db *db, struct mosquitto_msg_store *
 		return rc;
 	}
 
-	qos = retained->qos;
-
-	if(qos > sub_qos) qos = sub_qos;
+	if (db->config->upgrade_outgoing_qos){
+		qos = sub_qos;
+	} else {
+		qos = retained->qos;
+		if(qos > sub_qos) qos = sub_qos;
+	}
 	if(qos > 0){
 		mid = mosquitto__mid_generate(context);
 	}else{

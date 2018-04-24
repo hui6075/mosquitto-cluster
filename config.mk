@@ -114,7 +114,6 @@ SOVERSION=1
 XSLTPROC=xsltproc
 # For html generation
 DB_HTML_XSL=man/html.xsl
-TIMESTAMP:=$(shell date "+%F %T%z")
 
 #MANCOUNTRIES=en_GB
 
@@ -130,12 +129,12 @@ else
 	CFLAGS?=-Wall -ggdb -O2
 endif
 
-LIB_CFLAGS:=${CFLAGS} ${CPPFLAGS} -I. -I.. -I../lib
-LIB_CXXFLAGS:=$(LIB_CFLAGS) ${CPPFLAGS}
+LIB_CFLAGS:=${CFLAGS} ${CPPFLAGS} -I. -I.. -I../lib -std=c99
+LIB_CXXFLAGS:=$(CFLAGS) ${CPPFLAGS} -I. -I.. -I../lib
 LIB_LDFLAGS:=${LDFLAGS}
 
-BROKER_CFLAGS:=${LIB_CFLAGS} ${CPPFLAGS} -DVERSION="\"${VERSION}\"" -DTIMESTAMP="\"${TIMESTAMP}\"" -DWITH_BROKER
-CLIENT_CFLAGS:=${CFLAGS} ${CPPFLAGS} -I../lib -DVERSION="\"${VERSION}\""
+BROKER_CFLAGS:=${LIB_CFLAGS} ${CPPFLAGS} -DVERSION="\"${VERSION}\"" -DWITH_BROKER -std=c99
+CLIENT_CFLAGS:=${CFLAGS} ${CPPFLAGS} -I../lib -DVERSION="\"${VERSION}\"" -std=c99
 
 ifneq ($(or $(findstring $(UNAME),FreeBSD), $(findstring $(UNAME),OpenBSD)),)
 	BROKER_LIBS:=-lm

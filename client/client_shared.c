@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2014-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -14,6 +14,7 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 
+#define _POSIX_C_SOURCE 200809L
 
 #include <errno.h>
 #include <fcntl.h>
@@ -22,10 +23,12 @@ Contributors:
 #include <string.h>
 #ifndef WIN32
 #include <unistd.h>
+#include <strings.h>
 #else
 #include <process.h>
 #include <winsock2.h>
 #define snprintf sprintf_s
+#define strncasecmp _strnicmp
 #endif
 
 #include <mosquitto.h>
@@ -70,7 +73,7 @@ static int check_format(struct mosq_config *cfg, const char *str)
 					// JSON output, assuming JSON payload
 				}else if(str[i+1] == 'U'){
 					// Unix time+nanoseconds
-				}else if(str[i+1] == 'x'){
+				}else if(str[i+1] == 'x' || str[i+1] == 'X'){
 					// payload in hex
 				}else{
 					fprintf(stderr, "Error: Invalid format specifier '%c'.\n", str[i+1]);
@@ -434,6 +437,22 @@ int client_config_line_proc(struct mosq_config *cfg, int pub_or_sub, int argc, c
 					cfg->msg_count = atoi(argv[i+1]);
 					if(cfg->msg_count < 1){
 						fprintf(stderr, "Error: Invalid message count \"%d\".\n\n", cfg->msg_count);
+						return 1;
+					}
+				}
+				i++;
+			}
+		}else if(!strcmp(argv[i], "-W")){
+			if(pub_or_sub == CLIENT_PUB){
+				goto unknown_option;
+			}else{
+				if(i==argc-1){
+					fprintf(stderr, "Error: -W argument given but no timeout specified.\n\n");
+					return 1;
+				}else{
+					cfg->timeout = atoi(argv[i+1]);
+					if(cfg->timeout < 1){
+						fprintf(stderr, "Error: Invalid timeout \"%d\".\n\n", cfg->msg_count);
 						return 1;
 					}
 				}

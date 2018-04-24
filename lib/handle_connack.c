@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -26,12 +26,12 @@ Contributors:
 
 int handle__connack(struct mosquitto *mosq)
 {
-	uint8_t byte;
+	uint8_t connect_flags;
 	uint8_t result;
 	int rc;
 
 	assert(mosq);
-	rc = packet__read_byte(&mosq->in_packet, &byte); // Reserved byte, not used
+	rc = packet__read_byte(&mosq->in_packet, &connect_flags);
 	if(rc) return rc;
 	rc = packet__read_byte(&mosq->in_packet, &result);
 	if(rc) return rc;
@@ -40,6 +40,11 @@ int handle__connack(struct mosquitto *mosq)
 	if(mosq->on_connect){
 		mosq->in_callback = true;
 		mosq->on_connect(mosq, mosq->userdata, result);
+		mosq->in_callback = false;
+	}
+	if(mosq->on_connect_with_flags){
+		mosq->in_callback = true;
+		mosq->on_connect_with_flags(mosq, mosq->userdata, result, connect_flags);
 		mosq->in_callback = false;
 	}
 	pthread_mutex_unlock(&mosq->callback_mutex);

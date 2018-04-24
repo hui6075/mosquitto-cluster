@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -53,8 +53,6 @@ void sys_tree__init(struct mosquitto_db *db)
 	/* Set static $SYS messages */
 	snprintf(buf, 64, "mosquitto version %s", VERSION);
 	db__messages_easy_queue(db, NULL, "$SYS/broker/version", SYS_TREE_QOS, strlen(buf), buf, 1);
-	snprintf(buf, 64, "%s", TIMESTAMP);
-	db__messages_easy_queue(db, NULL, "$SYS/broker/timestamp", SYS_TREE_QOS, strlen(buf), buf, 1);
 }
 
 static void sys_tree__update_clients(struct mosquitto_db *db, char *buf)

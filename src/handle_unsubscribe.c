@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -38,6 +38,7 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 {
 	uint16_t mid;
 	char *sub;
+	int slen;
 
 	if(!context) return MOSQ_ERR_INVAL;
 #ifdef WITH_CLUSTER
@@ -46,6 +47,7 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 	else
 #endif
 	log__printf(NULL, MOSQ_LOG_DEBUG, "Received UNSUBSCRIBE from %s", context->id);
+
 	if(context->protocol == mosq_p_mqtt311){
 		if((context->in_packet.command&0x0F) != 0x02){
 			return MOSQ_ERR_PROTOCOL;
@@ -53,9 +55,15 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 	}
 	if(packet__read_uint16(&context->in_packet, &mid)) return 1;
 
+	if(context->protocol == mosq_p_mqtt311){
+		if(context->in_packet.pos == context->in_packet.remaining_length){
+			/* No topic specified, protocol error. */
+			return MOSQ_ERR_PROTOCOL;
+		}
+	}
 	while(context->in_packet.pos < context->in_packet.remaining_length){
 		sub = NULL;
-		if(packet__read_string(&context->in_packet, &sub)){
+		if(packet__read_string(&context->in_packet, &sub, &slen)){
 			return 1;
 		}
 
@@ -63,7 +71,7 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 #ifdef WITH_CLUSTER
 			if(!context->is_peer)
 #endif
-			if(STREMPTY(sub)){
+			if(!slen){
 				log__printf(NULL, MOSQ_LOG_INFO,
 						"Empty unsubscription string from %s, disconnecting.",
 						context->id);
@@ -83,7 +91,7 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 #ifdef WITH_CLUSTER
 			if(!context->is_peer)
 #endif
-			if(mosquitto_validate_utf8(sub, strlen(sub))){
+			if(mosquitto_validate_utf8(sub, slen)){
 				log__printf(NULL, MOSQ_LOG_INFO,
 						"Malformed UTF-8 in unsubscription string from %s, disconnecting.",
 						context->id);

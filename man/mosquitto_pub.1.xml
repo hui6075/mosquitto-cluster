@@ -91,6 +91,19 @@
 	</refsect1>
 
 	<refsect1>
+		<title>Encrypted Connections</title>
+		<para><command>mosquitto_pub</command> supports TLS encrypted
+			connections. It is strongly recommended that you use an encrypted
+			connection for anything more than the most basic setup.</para>
+		<para>To enable TLS connections when using x509 certificates, one of
+			either <option>--cafile</option> or <option>--capath</option> must
+			be provided as an option.</para>
+		<para>To enable TLS connections when using TLS-PSK, you must use the
+			<option>--psk</option> and the <option>--psk-identity</option>
+			options.</para>
+	</refsect1>
+
+	<refsect1>
 		<title>Options</title>
 		<para>The options below may be given on the command line, but may also
 			be placed in a config file located at
@@ -144,7 +157,7 @@
 						communication.</para>
 					<para>For <option>--capath</option> to work correctly, the
 						certificate files must have ".crt" as the file ending
-						and you must run "c_rehash &lt;path to capath&gt;" each
+						and you must run "openssl rehash &lt;path to capath&gt;" each
 						time you add/remove a certificate.</para>
 					<para>See also <option>--cafile</option></para>
 				</listitem>

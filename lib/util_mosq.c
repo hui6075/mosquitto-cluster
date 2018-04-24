@@ -1,15 +1,15 @@
 /*
-Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
 and Eclipse Distribution License v1.0 which accompany this distribution.
- 
+
 The Eclipse Public License is available at
    http://www.eclipse.org/legal/epl-v10.html
 and the Eclipse Distribution License is available at
   http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
 Contributors:
    Roger Light - initial implementation and documentation.
 */
@@ -27,6 +27,10 @@ Contributors:
 #endif
 
 
+#ifdef WITH_BROKER
+#include "mosquitto_broker_internal.h"
+#endif
+
 #include "mosquitto.h"
 #include "memory_mosq.h"
 #include "net_mosq.h"
@@ -34,10 +38,6 @@ Contributors:
 #include "time_mosq.h"
 #include "tls_mosq.h"
 #include "util_mosq.h"
-
-#ifdef WITH_BROKER
-#include "mosquitto_broker_internal.h"
-#endif
 
 #ifdef WITH_WEBSOCKETS
 #include <libwebsockets.h>
@@ -128,7 +128,7 @@ uint16_t mosquitto__mid_generate(struct mosquitto *mosq)
 	if(mosq->last_mid == 0) mosq->last_mid++;
 	mid = mosq->last_mid;
 	pthread_mutex_unlock(&mosq->mid_mutex);
-	
+
 	return mid;
 }
 
@@ -148,6 +148,21 @@ int mosquitto_pub_topic_check(const char *str)
 		str = &str[1];
 	}
 	if(len > 65535) return MOSQ_ERR_INVAL;
+
+	return MOSQ_ERR_SUCCESS;
+}
+
+int mosquitto_pub_topic_check2(const char *str, size_t len)
+{
+	int i;
+
+	if(len > 65535) return MOSQ_ERR_INVAL;
+
+	for(i=0; i<len; i++){
+		if(str[i] == '+' || str[i] == '#'){
+			return MOSQ_ERR_INVAL;
+		}
+	}
 
 	return MOSQ_ERR_SUCCESS;
 }
@@ -182,28 +197,68 @@ int mosquitto_sub_topic_check(const char *str)
 	return MOSQ_ERR_SUCCESS;
 }
 
-/* Does a topic match a subscription? */
+int mosquitto_sub_topic_check2(const char *str, size_t len)
+{
+	char c = '\0';
+	int i;
+
+	if(len > 65535) return MOSQ_ERR_INVAL;
+
+	for(i=0; i<len; i++){
+		if(str[i] == '+'){
+			if((c != '\0' && c != '/') || (i<len-1 && str[i+1] != '/')){
+				return MOSQ_ERR_INVAL;
+			}
+		}else if(str[i] == '#'){
+			if((c != '\0' && c != '/')  || i<len-1){
+				return MOSQ_ERR_INVAL;
+			}
+		}
+		c = str[i];
+	}
+
+	return MOSQ_ERR_SUCCESS;
+}
+
 int mosquitto_topic_matches_sub(const char *sub, const char *topic, bool *result)
 {
 	int slen, tlen;
-	int spos, tpos;
-	bool multilevel_wildcard = false;
 
-	if(!sub || !topic || !result) return MOSQ_ERR_INVAL;
+	if(!result) return MOSQ_ERR_INVAL;
+	*result = false;
+
+	if(!sub || !topic){
+		return MOSQ_ERR_INVAL;
+	}
 
 	slen = strlen(sub);
 	tlen = strlen(topic);
 
-	if(!slen || !tlen){
+	return mosquitto_topic_matches_sub2(sub, slen, topic, tlen, result);
+}
+
+/* Does a topic match a subscription? */
+int mosquitto_topic_matches_sub2(const char *sub, size_t sublen, const char *topic, size_t topiclen, bool *result)
+{
+	int spos, tpos;
+	bool multilevel_wildcard = false;
+
+	if(!result) return MOSQ_ERR_INVAL;
+	*result = false;
+
+	if(!sub || !topic){
+		return MOSQ_ERR_INVAL;
+	}
+
+	if(!sublen || !topiclen){
 		*result = false;
 		return MOSQ_ERR_INVAL;
 	}
 
-	if(slen && tlen){
+	if(sublen && topiclen){
 		if((sub[0] == '$' && topic[0] != '$')
 				|| (topic[0] == '$' && sub[0] != '$')){
 
-			*result = false;
 			return MOSQ_ERR_SUCCESS;
 		}
 	}
@@ -211,11 +266,11 @@ int mosquitto_topic_matches_sub(const char *sub, const char *topic, bool *result
 	spos = 0;
 	tpos = 0;
 
-	while(spos < slen && tpos <= tlen){
+	while(spos < sublen && tpos <= topiclen){
 		if(sub[spos] == topic[tpos]){
-			if(tpos == tlen-1){
+			if(tpos == topiclen-1){
 				/* Check for e.g. foo matching foo/# */
-				if(spos == slen-3 
+				if(spos == sublen-3
 						&& sub[spos+1] == '/'
 						&& sub[spos+2] == '#'){
 					*result = true;
@@ -225,12 +280,11 @@ int mosquitto_topic_matches_sub(const char *sub, const char *topic, bool *result
 			}
 			spos++;
 			tpos++;
-			if(spos == slen && tpos == tlen){
+			if(spos == sublen && tpos == topiclen){
 				*result = true;
 				return MOSQ_ERR_SUCCESS;
-			}else if(tpos == tlen && spos == slen-1 && sub[spos] == '+'){
+			}else if(tpos == topiclen && spos == sublen-1 && sub[spos] == '+'){
 				if(spos > 0 && sub[spos-1] != '/'){
-					*result = false;
 					return MOSQ_ERR_INVAL;
 				}
 				spos++;
@@ -241,49 +295,56 @@ int mosquitto_topic_matches_sub(const char *sub, const char *topic, bool *result
 			if(sub[spos] == '+'){
 				/* Check for bad "+foo" or "a/+foo" subscription */
 				if(spos > 0 && sub[spos-1] != '/'){
-					*result = false;
 					return MOSQ_ERR_INVAL;
 				}
 				/* Check for bad "foo+" or "foo+/a" subscription */
-				if(spos < slen-1 && sub[spos+1] != '/'){
-					*result = false;
+				if(spos < sublen-1 && sub[spos+1] != '/'){
 					return MOSQ_ERR_INVAL;
 				}
 				spos++;
-				while(tpos < tlen && topic[tpos] != '/'){
+				while(tpos < topiclen && topic[tpos] != '/'){
 					tpos++;
 				}
-				if(tpos == tlen && spos == slen){
+				if(tpos == topiclen && spos == sublen){
 					*result = true;
 					return MOSQ_ERR_SUCCESS;
 				}
 			}else if(sub[spos] == '#'){
 				if(spos > 0 && sub[spos-1] != '/'){
-					*result = false;
 					return MOSQ_ERR_INVAL;
 				}
 				multilevel_wildcard = true;
-				if(spos+1 != slen){
-					*result = false;
+				if(spos+1 != sublen){
 					return MOSQ_ERR_INVAL;
 				}else{
 					*result = true;
 					return MOSQ_ERR_SUCCESS;
 				}
 			}else{
-				*result = false;
+				/* Check for e.g. foo/bar matching foo/+/# */
+				if(spos > 0
+						&& spos+2 == sublen
+						&& tpos == topiclen
+						&& sub[spos-1] == '+'
+						&& sub[spos] == '/'
+						&& sub[spos+1] == '#')
+				{
+					*result = true;
+					multilevel_wildcard = true;
+					return MOSQ_ERR_SUCCESS;
+				}
 				return MOSQ_ERR_SUCCESS;
 			}
 		}
 	}
-	if(multilevel_wildcard == false && (tpos < tlen || spos < slen)){
+	if(multilevel_wildcard == false && (tpos < topiclen || spos < sublen)){
 		*result = false;
 	}
 
 	return MOSQ_ERR_SUCCESS;
 }
 
-#ifdef REAL_WITH_TLS_PSK
+#ifdef WITH_TLS_PSK
 int mosquitto__hex2bin(const char *hex, unsigned char *bin, int bin_max_len)
 {
 	BIGNUM *bn = NULL;
@@ -392,4 +453,3 @@ FILE *mosquitto__fopen(const char *path, const char *mode, bool restrict_read)
 	}
 #endif
 }
-

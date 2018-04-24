@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2012-2017 Roger Light <roger@atchoo.org>
+Copyright (c) 2012-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -121,7 +121,8 @@ int mosquitto_auth_plugin_init(void **user_data, struct mosquitto_opt *opts, int
 /*
  * Function: mosquitto_auth_plugin_cleanup
  *
- * Called when the broker is shutting down. This will only ever be called once.
+ * Called when the broker is shutting down. This will only ever be called once
+ * per plugin.
  * Note that <mosquitto_auth_security_cleanup> will be called directly before
  * this function.
  *
@@ -219,7 +220,7 @@ int mosquitto_auth_security_cleanup(void *user_data, struct mosquitto_opt *opts,
  *	MOSQ_ERR_UNKNOWN for an application specific error.
  *	MOSQ_ERR_PLUGIN_DEFER if your plugin does not wish to handle this check.
  */
-int mosquitto_auth_acl_check(void *user_data, int access, const struct mosquitto *client, struct mosquitto_acl_msg *msg);
+int mosquitto_auth_acl_check(void *user_data, int access, const struct mosquitto *client, const struct mosquitto_acl_msg *msg);
 
 
 /*

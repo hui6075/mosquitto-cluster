@@ -35,9 +35,12 @@ void on_disconnect(struct mosquitto *mosq, void *obj, int rc)
 int main(int argc, char *argv[])
 {
 	int rc;
+	int port;
 	struct mosquitto *mosq;
 
 	mosquitto_lib_init();
+
+	port = atoi(argv[1]);
 
 	mosq = mosquitto_new("08-tls-psk-pub", true, NULL);
 	mosquitto_tls_opts_set(mosq, 1, "tlsv1", NULL);
@@ -50,7 +53,7 @@ int main(int argc, char *argv[])
 	mosquitto_disconnect_callback_set(mosq, on_disconnect);
 	mosquitto_publish_callback_set(mosq, on_publish);
 
-	rc = mosquitto_connect(mosq, "localhost", 1888, 60);
+	rc = mosquitto_connect(mosq, "localhost", port, 60);
 	if(rc){
 		mosquitto_destroy(mosq);
 		return rc;

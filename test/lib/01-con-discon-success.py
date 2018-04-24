@@ -20,6 +20,8 @@ if cmd_subfolder not in sys.path:
 
 import mosq_test
 
+port = mosq_test.get_lib_port()
+
 rc = 1
 keepalive = 60
 connect_packet = mosq_test.gen_connect("01-con-discon-success", keepalive=keepalive)
@@ -30,7 +32,7 @@ disconnect_packet = mosq_test.gen_disconnect()
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 sock.settimeout(10)
-sock.bind(('', 1888))
+sock.bind(('', port))
 sock.listen(5)
 
 client_args = sys.argv[1:]
@@ -41,7 +43,8 @@ try:
 except KeyError:
     pp = ''
 env['PYTHONPATH'] = '../../lib/python:'+pp
-client = mosq_test.start_client(filename=sys.argv[1].replace('/', '-'), cmd=client_args, env=env)
+
+client = mosq_test.start_client(filename=sys.argv[1].replace('/', '-'), cmd=client_args, env=env, port=port)
 
 try:
     (conn, address) = sock.accept()

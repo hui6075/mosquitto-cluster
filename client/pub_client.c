@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -14,6 +14,8 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 
+/* For nanosleep */
+#define _POSIX_C_SOURCE 200809L
 
 #include <errno.h>
 #include <fcntl.h>
@@ -21,7 +23,7 @@ Contributors:
 #include <stdlib.h>
 #include <string.h>
 #ifndef WIN32
-#include <unistd.h>
+#include <time.h>
 #else
 #include <process.h>
 #include <winsock2.h>
@@ -34,6 +36,7 @@ Contributors:
 #define STATUS_CONNECTING 0
 #define STATUS_CONNACK_RECVD 1
 #define STATUS_WAITING 2
+#define STATUS_DISCONNECTING 3
 
 /* Global variables for use in callbacks. See sub_client.c for an example of
  * using a struct to hold variables for use in callbacks. */
@@ -245,7 +248,7 @@ void print_usage(void)
 	printf(" -M : the maximum inflight messages for QoS 1/2..\n");
 	printf(" -n : send a null (zero length) message.\n");
 	printf(" -p : network port to connect to. Defaults to 1883 for plain MQTT and 8883 for MQTT over TLS.\n");
-	printf(" -P : provide a password (requires MQTT 3.1 broker)\n");
+	printf(" -P : provide a password\n");
 	printf(" -q : quality of service level to use for all messages. Defaults to 0.\n");
 	printf(" -r : message should be retained.\n");
 	printf(" -s : read message from stdin, sending the entire input as a message.\n");
@@ -253,7 +256,7 @@ void print_usage(void)
 	printf(" -S : use SRV lookups to determine which host to connect to.\n");
 #endif
 	printf(" -t : mqtt topic to publish to.\n");
-	printf(" -u : provide a username (requires MQTT 3.1 broker)\n");
+	printf(" -u : provide a username\n");
 	printf(" -V : specify the version of the MQTT protocol to use when connecting.\n");
 	printf("      Can be mqttv31 or mqttv311. Defaults to mqttv311.\n");
 	printf(" --help : display this message.\n");
@@ -297,7 +300,7 @@ int main(int argc, char *argv[])
 	struct mosquitto *mosq = NULL;
 	int rc;
 	int rc2;
-	char *buf;
+	char *buf, *buf2;
 	int buf_len = 1024;
 	int buf_len_actual;
 	int read_len;
@@ -319,6 +322,7 @@ int main(int argc, char *argv[])
 		}else{
 			fprintf(stderr, "\nUse 'mosquitto_pub --help' to see usage.\n");
 		}
+		free(buf);
 		return 1;
 	}
 
@@ -335,11 +339,13 @@ int main(int argc, char *argv[])
 	if(cfg.pub_mode == MSGMODE_STDIN_FILE){
 		if(load_stdin()){
 			fprintf(stderr, "Error loading input from stdin.\n");
+			free(buf);
 			return 1;
 		}
 	}else if(cfg.file_input){
 		if(load_file(cfg.file_input)){
 			fprintf(stderr, "Error loading input file \"%s\".\n", cfg.file_input);
+			free(buf);
 			return 1;
 		}
 	}
@@ -347,6 +353,7 @@ int main(int argc, char *argv[])
 	if(!topic || mode == MSGMODE_NONE){
 		fprintf(stderr, "Error: Both topic and message must be supplied.\n");
 		print_usage();
+		free(buf);
 		return 1;
 	}
 
@@ -354,6 +361,7 @@ int main(int argc, char *argv[])
 	mosquitto_lib_init();
 
 	if(client_id_generate(&cfg, "mosqpub")){
+		free(buf);
 		return 1;
 	}
 
@@ -368,6 +376,7 @@ int main(int argc, char *argv[])
 				break;
 		}
 		mosquitto_lib_cleanup();
+		free(buf);
 		return 1;
 	}
 	if(cfg.debug){
@@ -378,6 +387,7 @@ int main(int argc, char *argv[])
 	mosquitto_publish_callback_set(mosq, my_publish_callback);
 
 	if(client_opts_set(mosq, &cfg)){
+		free(buf);
 		return 1;
 	}
 	rc = client_connect(mosq, &cfg);
@@ -406,16 +416,25 @@ int main(int argc, char *argv[])
 						buf_len += 1024;
 						pos += 1023;
 						read_len = 1024;
-						buf = realloc(buf, buf_len);
-						if(!buf){
+						buf2 = realloc(buf, buf_len);
+						if(!buf2){
+							free(buf);
 							fprintf(stderr, "Error: Out of memory.\n");
 							return 1;
 						}
+						buf = buf2;
 					}
 				}
 				if(feof(stdin)){
+					if(last_mid == -1){
+						/* Empty file */
+						mosquitto_disconnect(mosq);
+						disconnect_sent = true;
+						status = STATUS_DISCONNECTING;
+					}else{
 					last_mid = mid_sent;
 					status = STATUS_WAITING;
+				}
 				}
 			}else if(status == STATUS_WAITING){
 				if(last_mid_sent == last_mid && disconnect_sent == false){
@@ -425,7 +444,10 @@ int main(int argc, char *argv[])
 #ifdef WIN32
 				Sleep(100);
 #else
-				usleep(100000);
+				struct timespec ts;
+				ts.tv_sec = 0;
+				ts.tv_nsec = 100000000;
+				nanosleep(&ts, NULL);
 #endif
 			}
 			rc = MOSQ_ERR_SUCCESS;

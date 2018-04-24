@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -15,8 +15,14 @@ Contributors:
 */
 
 #include <assert.h>
-//#include <stdio.h>
-//#include <string.h>
+#include <string.h>
+
+#ifdef WITH_BROKER
+#  include "mosquitto_broker_internal.h"
+#  include "sys_tree.h"
+#else
+#  define G_PUB_BYTES_SENT_INC(A)
+#endif
 
 #include "mosquitto.h"
 #include "mosquitto_internal.h"

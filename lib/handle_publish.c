@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2016 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2018 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -33,6 +33,7 @@ int handle__publish(struct mosquitto *mosq)
 	struct mosquitto_message_all *message;
 	int rc = 0;
 	uint16_t mid;
+	int slen;
 
 	assert(mosq);
 
@@ -45,12 +46,12 @@ int handle__publish(struct mosquitto *mosq)
 	message->msg.qos = (header & 0x06)>>1;
 	message->msg.retain = (header & 0x01);
 
-	rc = packet__read_string(&mosq->in_packet, &message->msg.topic);
+	rc = packet__read_string(&mosq->in_packet, &message->msg.topic, &slen);
 	if(rc){
 		message__cleanup(&message);
 		return rc;
 	}
-	if(!strlen(message->msg.topic)){
+	if(!slen){
 		message__cleanup(&message);
 		return MOSQ_ERR_PROTOCOL;
 	}

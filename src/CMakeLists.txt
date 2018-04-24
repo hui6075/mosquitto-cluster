@@ -168,7 +168,7 @@ install(FILES mosquitto_broker.h mosquitto_plugin.h DESTINATION "${INCLUDEDIR}")
 
 if (${WITH_TLS} STREQUAL ON)
 	add_executable(mosquitto_passwd mosquitto_passwd.c)
-	target_link_libraries(mosquitto_passwd "${OPENSSL_LIBRARIES}")
+	target_link_libraries(mosquitto_passwd ${OPENSSL_LIBRARIES})
 	install(TARGETS mosquitto_passwd RUNTIME DESTINATION "${BINDIR}" LIBRARY DESTINATION "${LIBDIR}")
 endif (${WITH_TLS} STREQUAL ON)
 

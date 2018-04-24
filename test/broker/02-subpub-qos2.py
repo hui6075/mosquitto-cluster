@@ -31,11 +31,12 @@ pubrec_packet2 = mosq_test.gen_pubrec(mid)
 pubrel_packet2 = mosq_test.gen_pubrel(mid)
 pubcomp_packet2 = mosq_test.gen_pubcomp(mid)
 
-cmd = ['../../src/mosquitto', '-p', '1888']
-broker = mosq_test.start_broker(filename=os.path.basename(__file__), cmd=cmd)
+
+port = mosq_test.get_port()
+broker = mosq_test.start_broker(filename=os.path.basename(__file__), port=port)
 
 try:
-    sock = mosq_test.do_client_connect(connect_packet, connack_packet, timeout=20)
+    sock = mosq_test.do_client_connect(connect_packet, connack_packet, timeout=20, port=port)
     sock.send(subscribe_packet)
 
     if mosq_test.expect_packet(sock, "suback", suback_packet):
@@ -56,8 +57,8 @@ try:
 finally:
     broker.terminate()
     broker.wait()
+    (stdo, stde) = broker.communicate()
     if rc:
-        (stdo, stde) = broker.communicate()
         print(stde)
 
 exit(rc)
