@@ -9,7 +9,7 @@ Mosquitto集群
 \> git clone https://github.com/hui6075/mosquitto-cluster.git </br>
 \> cd mosquitto-cluster && vi config.mk </br>
 ```
-#WITH_BRIDGE:=yes
+# WITH_BRIDGE:=yes
 WITH_CLUSTER:=yes
 ```
 \> make && make install </br>
