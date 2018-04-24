@@ -9,11 +9,13 @@ E.g., each node has a fault rate with 1%, then a decentralized cluster with N no
 ## Usage
 
 Install mosquitto on all of the nodes and write the addresses into mosquitto.conf, e.g.,<br>
-node_name node1<br>
-node_address 192.168.1.1:1883<br>
-<br>
-node_name node2<br>
-node_address 192.168.1.2:1883<br>
+```
+node_name node1
+node_address 192.168.1.1:1883
+
+node_name node2
+node_address 192.168.1.2:1883
+```
 
 Then config the loadbalancer, take above adresses as real server address. It is strongly recommend to terminate TLS on the loadbalancer, and use plain TCP inside the cluster.<br>
 
