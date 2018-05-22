@@ -81,3 +81,6 @@ https://github.com/hui6075/mosquitto-cluster/tree/master/benchmark
 ## 其他
 ![image](https://github.com/hui6075/mosquitto-cluster/blob/master/benchmark/mosquitto_code_analyze.jpg)
 ##### <div align=center>Pic5. Mosquitto源码分析<br></div>
+
+## 开源项目
+* MQTT v5.0协议草案中文版翻译: <https://github.com/hui6075/mqtt_v5>
