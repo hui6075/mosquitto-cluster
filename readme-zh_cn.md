@@ -6,18 +6,24 @@ Mosquitto集群
 
 ## 编译安装
 
-git clone https://github.com/hui6075/mosquitto-cluster.git <br>
-编辑config.mk文件，注释行："#WITH_BRIDGE:=yes"，取消注释行："WITH_CLUSTER:=yes"。<br>
-然后编译、安装Mosquitto。
+\> git clone https://github.com/hui6075/mosquitto-cluster.git </br>
+\> cd mosquitto-cluster && vi config.mk </br>
+```
+# WITH_BRIDGE:=yes
+WITH_CLUSTER:=yes
+```
+\> make && make install </br>
 
 ## 部署
 
-在所有节点上安装Mosquitto，并把节点名、IP、端口号写进配置文件mosquitto.conf,例如：<br>
-node_name node1<br>
-node_address 192.168.1.1:1883<br>
-<br>
-node_name node2<br>
-node_address 192.168.1.2:1883<br>
+在所有节点上安装Mosquitto，并把节点名、IP、端口号写进配置文件mosquitto.conf，例如：<br>
+`````
+node_name node1
+node_address 192.168.1.1:1883
+
+node_name node2
+node_address 192.168.1.2:1883
+`````
 然后配置负载均衡器，把所有节点的地址：端口号作为后端服务地址。Mosquitto是单进程实现，建议单机多实例部署，并把TLS终结在负载均衡器。
 
 ## Mosquitto集群特性
@@ -75,3 +81,6 @@ https://github.com/hui6075/mosquitto-cluster/tree/master/benchmark
 ## 其他
 ![image](https://github.com/hui6075/mosquitto-cluster/blob/master/benchmark/mosquitto_code_analyze.jpg)
 ##### <div align=center>Pic5. Mosquitto源码分析<br></div>
+
+## 开源项目
+* MQTT v5.0协议草案中文版翻译: <https://github.com/hui6075/mqtt_v5>
