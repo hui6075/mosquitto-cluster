@@ -562,7 +562,9 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 #ifdef WITH_EPOLL
 		switch(fdcount){
 		case -1:
+			if(errno != EINTR){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error in epoll waiting: %s.", strerror(errno));
+			}
 			break;
 		case 0:
 			break;

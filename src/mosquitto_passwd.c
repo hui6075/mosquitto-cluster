@@ -14,8 +14,7 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 
-#define _POSIX_C_SOURCE 200809L
-#define _DEFAULT_SOURCE
+#include "config.h"
 
 #include <errno.h>
 #include <openssl/evp.h>
@@ -445,8 +444,16 @@ int main(int argc, char *argv[])
 #else
 	password_file = realpath(password_file_tmp, NULL);
 	if(!password_file){
+		if(errno == ENOENT){
+			password_file = strdup(password_file_tmp);
+			if(!password_file){
+				fprintf(stderr, "Error: Out of memory.\n");
+				return 1;
+			}
+		}else{
 		fprintf(stderr, "Error reading password file: %s\n", strerror(errno));
 		return 1;
+	}
 	}
 #endif
 

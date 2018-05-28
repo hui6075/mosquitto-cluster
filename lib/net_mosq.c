@@ -443,9 +443,9 @@ int net__socket_connect_tls(struct mosquitto *mosq)
 #endif
 
 
+#ifdef WITH_TLS
 static int net__init_ssl_ctx(struct mosquitto *mosq)
 {
-#ifdef WITH_TLS
 	int ret;
 
 	if(mosq->ssl_ctx){
@@ -582,9 +582,9 @@ static int net__init_ssl_ctx(struct mosquitto *mosq)
 		}
 	}
 
-#endif
 	return MOSQ_ERR_SUCCESS;
 }
+#endif
 
 
 int net__socket_connect_step3(struct mosquitto *mosq, const char *host, uint16_t port, const char *bind_address, bool blocking)
@@ -675,6 +675,9 @@ ssize_t net__read(struct mosquitto *mosq, void *buf, size_t count)
 				net__print_ssl_error(mosq);
 				errno = EPROTO;
 			}
+#ifdef WIN32
+			WSASetLastError(errno);
+#endif
 		}
 		return (ssize_t )ret;
 	}else{

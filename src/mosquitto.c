@@ -18,7 +18,6 @@ Contributors:
 
 #ifndef WIN32
 /* For initgroups() */
-#  define _DEFAULT_SOURCE
 #  include <unistd.h>
 #  include <grp.h>
 #  include <assert.h>
@@ -203,6 +202,7 @@ int main(int argc, char *argv[])
 	int rc;
 #ifdef WIN32
 	SYSTEMTIME st;
+	_setmaxstdio(2048);
 #else
 	struct timeval tv;
 #endif

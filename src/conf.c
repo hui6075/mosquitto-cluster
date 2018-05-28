@@ -150,9 +150,15 @@ static int conf__attempt_resolve(const char *host, const char *text, int log, co
 
 static void config__init_reload(struct mosquitto__config *config)
 {
+	int i;
 	/* Set defaults */
-	mosquitto__free(config->acl_file);
-	config->acl_file = NULL;
+	for(i=0; i<config->listener_count; i++){
+		mosquitto__free(config->listeners[i].security_options.acl_file);
+		config->listeners[i].security_options.acl_file = NULL;
+	}
+
+	mosquitto__free(config->security_options.acl_file);
+	config->security_options.acl_file = NULL;
 	config->security_options.allow_anonymous = -1;
 	config->allow_duplicate_messages = false;
 	config->security_options.allow_zero_length_clientid = true;
@@ -254,15 +260,18 @@ void config__init(struct mosquitto__config *config)
 void config__cleanup(struct mosquitto__config *config)
 {
 	int i;
+#ifdef WITH_BRIDGE
+	int j;
+#endif
 
-	mosquitto__free(config->acl_file);
-	mosquitto__free(config->security_options.auto_id_prefix);
 	mosquitto__free(config->clientid_prefixes);
 	mosquitto__free(config->config_file);
-	mosquitto__free(config->security_options.password_file);
 	mosquitto__free(config->persistence_location);
 	mosquitto__free(config->persistence_file);
 	mosquitto__free(config->persistence_filepath);
+	mosquitto__free(config->security_options.auto_id_prefix);
+	mosquitto__free(config->security_options.acl_file);
+	mosquitto__free(config->security_options.password_file);
 	mosquitto__free(config->security_options.psk_file);
 	mosquitto__free(config->pid_file);
 	if(config->listeners){
@@ -270,6 +279,10 @@ void config__cleanup(struct mosquitto__config *config)
 			mosquitto__free(config->listeners[i].host);
 			mosquitto__free(config->listeners[i].mount_point);
 			mosquitto__free(config->listeners[i].socks);
+			mosquitto__free(config->listeners[i].security_options.auto_id_prefix);
+			mosquitto__free(config->listeners[i].security_options.acl_file);
+			mosquitto__free(config->listeners[i].security_options.password_file);
+			mosquitto__free(config->listeners[i].security_options.psk_file);
 #ifdef WITH_TLS
 			mosquitto__free(config->listeners[i].cafile);
 			mosquitto__free(config->listeners[i].capath);
@@ -293,7 +306,6 @@ void config__cleanup(struct mosquitto__config *config)
 		mosquitto__free(config->listeners);
 	}
 #ifdef WITH_BRIDGE
-	int j;
 	if(config->bridges){
 		for(i=0; i<config->bridge_count; i++){
 			mosquitto__free(config->bridges[i].name);
@@ -709,11 +721,12 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 			token = strtok_r((*buf), " ", &saveptr);
 			if(token){
 				if(!strcmp(token, "acl_file")){
+					conf__set_cur_security_options(config, cur_listener, &cur_security_options);
 					if(reload){
-						mosquitto__free(config->acl_file);
-						config->acl_file = NULL;
+						mosquitto__free(cur_security_options->acl_file);
+						cur_security_options->acl_file = NULL;
 					}
-					if(conf__parse_string(&token, "acl_file", &config->acl_file, saveptr)) return MOSQ_ERR_INVAL;
+					if(conf__parse_string(&token, "acl_file", &cur_security_options->acl_file, saveptr)) return MOSQ_ERR_INVAL;
 				}else if(!strcmp(token, "address") || !strcmp(token, "addresses")){
 #ifdef WITH_BRIDGE
 					if(reload) continue; // FIXME
@@ -1485,26 +1498,39 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 					log__printf(NULL, MOSQ_LOG_WARNING, "Warning: TLS support not available.");
 #endif
 				}else if(!strcmp(token, "listener")){
-					if(reload) continue; // Listeners not valid for reloading.
 					token = strtok_r(NULL, " ", &saveptr);
 					if(token){
+						tmp_int = atoi(token);
+						if(tmp_int < 1 || tmp_int > 65535){
+							log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid port value (%d).", tmp_int);
+							return MOSQ_ERR_INVAL;
+						}
+
+						if(reload){
+							/* We reload listeners settings based on port number.
+							 * If the port number doesn't already exist, exit with a complaint. */
+							cur_listener = NULL;
+							for(i=0; i<config->listener_count; i++){
+								if(config->listeners[i].port == tmp_int){
+									cur_listener = &config->listeners[i];
+								}
+							}
+						}else{
 						config->listener_count++;
 						config->listeners = mosquitto__realloc(config->listeners, sizeof(struct mosquitto__listener)*config->listener_count);
 						if(!config->listeners){
 							log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 							return MOSQ_ERR_NOMEM;
 						}
-						tmp_int = atoi(token);
-						if(tmp_int < 1 || tmp_int > 65535){
-							log__printf(NULL, MOSQ_LOG_ERR, "Error: Invalid port value (%d).", tmp_int);
-							return MOSQ_ERR_INVAL;
-						}
 						cur_listener = &config->listeners[config->listener_count-1];
 						memset(cur_listener, 0, sizeof(struct mosquitto__listener));
+						}
+
 						cur_listener->security_options.allow_anonymous = -1;
 						cur_listener->protocol = mp_mqtt;
 						cur_listener->port = tmp_int;
 						token = strtok_r(NULL, "", &saveptr);
+						mosquitto__free(cur_listener->host);
 						if(token){
 							cur_listener->host = mosquitto__strdup(token);
 						}else{
@@ -2422,6 +2448,7 @@ static int conf__parse_int(char **token, const char *name, int *value, char *sav
 
 static int conf__parse_string(char **token, const char *name, char **value, char *saveptr)
 {
+	int len;
 	*token = strtok_r(NULL, "", &saveptr);
 	if(*token){
 		if(*value){
@@ -2432,7 +2459,12 @@ static int conf__parse_string(char **token, const char *name, char **value, char
 		while((*token)[0] == ' ' || (*token)[0] == '\t'){
 			(*token)++;
 		}
-		if(mosquitto_validate_utf8(*token, strlen(*token))){
+		len = strlen(*token);
+		while((*token)[len-1] == ' '){
+			(*token)[len-1] = '\0';
+			len--;
+		}
+		if(mosquitto_validate_utf8(*token, len)){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Malformed UTF-8 in configuration.");
 			return MOSQ_ERR_INVAL;
 		}

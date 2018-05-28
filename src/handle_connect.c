@@ -108,7 +108,7 @@ void connection_check_acl(struct mosquitto_db *db, struct mosquitto *context, st
 
 int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 {
-	char *protocol_name = NULL;
+	char protocol_name[7];
 	uint8_t protocol_version;
 	uint8_t connect_flags;
 	uint8_t connect_ack = 0;
@@ -124,8 +124,10 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 	struct mosquitto__acl_user *acl_tail;
 	struct mosquitto *found_context;
 	int slen;
+	uint16_t slen16;
 	struct mosquitto__subleaf *leaf;
 	int i;
+	struct mosquitto__security_options *security_opts;
 #ifdef WITH_TLS
 	X509 *client_cert = NULL;
 	X509_NAME *name;
@@ -148,20 +150,27 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 		goto handle_connect_error;
 	}
 
-	if(packet__read_string(&context->in_packet, &protocol_name, &slen)){
+	/* Read protocol name as length then bytes rather than with read_string
+	 * because the length is fixed and we can check that. Removes the need
+	 * for another malloc as well. */
+	if(packet__read_uint16(&context->in_packet, &slen16)){
 		rc = 1;
 		goto handle_connect_error;
-		return 1;
 	}
-	if(!protocol_name){
-		rc = 3;
+	slen = slen16;
+	if(slen != 4 /* MQTT */ && slen != 6 /* MQIsdp */){
+		rc = MOSQ_ERR_PROTOCOL;
 		goto handle_connect_error;
-		return 3;
 	}
+	if(packet__read_bytes(&context->in_packet, protocol_name, slen)){
+		rc = MOSQ_ERR_PROTOCOL;
+		goto handle_connect_error;
+	}
+	protocol_name[slen] = '\0';
+
 	if(packet__read_byte(&context->in_packet, &protocol_version)){
 		rc = 1;
 		goto handle_connect_error;
-		return 1;
 	}
 	if(!strcmp(protocol_name, PROTOCOL_NAME_v31)){
 		if((protocol_version&PROTOCOL_MASK) != PROTOCOL_VERSION_v31){
@@ -198,8 +207,6 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 		rc = MOSQ_ERR_PROTOCOL;
 		goto handle_connect_error;
 	}
-	mosquitto__free(protocol_name);
-	protocol_name = NULL;
 
 	if(packet__read_byte(&context->in_packet, &connect_flags)){
 		rc = 1;
@@ -617,8 +624,17 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 #endif
 
 	/* Associate user with its ACL, assuming we have ACLs loaded. */
-	if(db->acl_list){
-		acl_tail = db->acl_list;
+	if(db->config->per_listener_settings){
+		if(!context->listener){
+			return 1;
+		}
+		security_opts = &context->listener->security_options;
+	}else{
+		security_opts = &db->config->security_options;
+	}
+
+	if(security_opts->acl_list){
+		acl_tail = security_opts->acl_list;
 		while(acl_tail){
 			if(context->username){
 				if(acl_tail->username && !strcmp(context->username, acl_tail->username)){
@@ -711,7 +727,6 @@ handle_connect_error:
 	mosquitto__free(will_payload);
 	mosquitto__free(will_topic);
 	mosquitto__free(will_struct);
-	mosquitto__free(protocol_name);
 #ifdef WITH_TLS
 	if(client_cert) X509_free(client_cert);
 #endif

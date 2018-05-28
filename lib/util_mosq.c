@@ -174,7 +174,7 @@ int mosquitto_pub_topic_check2(const char *str, size_t len)
  * Also returns MOSQ_ERR_INVAL if the topic string is too long.
  * Returns MOSQ_ERR_SUCCESS if everything is fine.
  */
-int mosquitto_sub_topic_check(const char *str)
+int mosquitto_sub_topic_check(const char *str) /* whole topic */
 {
 	char c = '\0';
 	int len = 0;

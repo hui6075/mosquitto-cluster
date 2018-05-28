@@ -11,7 +11,7 @@ project(mosquitto)
 cmake_minimum_required(VERSION 2.8)
 # Only for version 3 and up. cmake_policy(SET CMP0042 NEW)
 
-set (VERSION 1.4.90)
+set (VERSION 1.5.0)
 
 add_definitions (-DCMAKE -DVERSION=\"${VERSION}\")
 

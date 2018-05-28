@@ -1,9 +1,16 @@
-1.5 - 2018xxxx
+1.5 - 20180502
 ==============
+
+Security:
+- Fix memory leak that could be caused by a malicious CONNECT packet. This
+  does not yet have a CVE assigned. Closes #533493 (on Eclipse bugtracker)
 
 Broker features:
 - Add per_listener_settings to allow authentication and access control to be
   per listener.
+- Add limited support for reloading listener settings. This allows settings
+  for an already defined listener to be reloaded, but port numbers must not be
+  changed.
 - Add ability to deny access to SUBSCRIBE messages as well as the current
   read/write accesses. Currently for auth plugins only.
 - Reduce calls to malloc through the use of UHPA.
@@ -75,6 +82,7 @@ Broker fixes:
 - Maximum connections on Windows increased to 2048.
 - When a client with an in-use client-id connects, if the old client has a
   will, send the will message. Closes #26.
+- Fix parsing of configuration options that end with a space. Closes #804.
 
 Client library features:
 - Outgoing messages with QoS>1 are no longer retried after a timeout period.

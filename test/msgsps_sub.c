@@ -30,7 +30,7 @@ void my_message_callback(struct mosquitto *mosq, void *obj, const struct mosquit
 	if(message_count == 0){
 		gettimeofday(&start, NULL);
 	}
-	fwrite(msg->payload, sizeof(uint8_t), msg->payloadlen, fptr);
+	//fwrite(msg->payload, sizeof(uint8_t), msg->payloadlen, fptr);
 	message_count++;
 	if(message_count == MESSAGE_COUNT){
 		gettimeofday(&stop, NULL);
@@ -44,7 +44,6 @@ int main(int argc, char *argv[])
 	double dstart, dstop, diff;
 	int mid = 0;
 	char id[50];
-	int rc;
 
 	start.tv_sec = 0;
 	start.tv_usec = 0;
@@ -64,13 +63,10 @@ int main(int argc, char *argv[])
 	mosquitto_disconnect_callback_set(mosq, my_disconnect_callback);
 	mosquitto_message_callback_set(mosq, my_message_callback);
 
-	mosquitto_connect(mosq, "127.0.0.1", 1884, 600);
-	mosquitto_subscribe(mosq, &mid, "perf/test", 0);
+	mosquitto_connect(mosq, HOST, PORT, 600);
+	mosquitto_subscribe(mosq, &mid, "perf/test", SUB_QOS);
 
-	do{
-		rc = mosquitto_loop(mosq, 1, 10);
-	}while(rc == MOSQ_ERR_SUCCESS && run);
-	printf("rc: %d\n", rc);
+	mosquitto_loop_forever(mosq, 10, 1);
 
 	dstart = (double)start.tv_sec*1.0e6 + (double)start.tv_usec;
 	dstop = (double)stop.tv_sec*1.0e6 + (double)stop.tv_usec;
