@@ -98,3 +98,7 @@ https://github.com/hui6075/mosquitto/tree/develop/benchmark
 
 ![image](https://github.com/hui6075/mosquitto-cluster/blob/master/benchmark/mosquitto_code_analyze.jpg)
 <p align="center"><b>Pic5. Mosquitto code analyze(benchmark/mosquitto_code_analyze.jpg, w/o cluster)</b></p>
+
+## Other Projects
+* MQTT v5.0 Chinese Translation: <https://github.com/hui6075/mqtt_v5>
+* MQTT broker forward latency measurement tool: <https://github.com/hui6075/mqtt-bm-latency>
